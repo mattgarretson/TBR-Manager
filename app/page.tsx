@@ -446,13 +446,12 @@ export default function Home() {
       </button>
 
       {editorOpen && (
-        <div className="dialog-backdrop" onMouseDown={closeEditor}>
+        <div className="dialog-backdrop">
           <section
             className="book-dialog"
             role="dialog"
             aria-modal="true"
             aria-labelledby="dialog-title"
-            onMouseDown={(event) => event.stopPropagation()}
           >
             <div className="dialog-grabber" aria-hidden="true" />
             <div className="dialog-heading">
