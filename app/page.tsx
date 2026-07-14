@@ -53,6 +53,14 @@ function initials(title: string) {
     .join("");
 }
 
+function coverTone(bookId: string) {
+  let hash = 0;
+  for (let index = 0; index < bookId.length; index += 1) {
+    hash = (hash * 31 + bookId.charCodeAt(index)) >>> 0;
+  }
+  return hash % 5;
+}
+
 export default function Home() {
   const [books, setBooks] = useState<Book[]>([]);
   const [libraryId, setLibraryId] = useState("");
@@ -363,9 +371,9 @@ export default function Home() {
           </div>
         ) : visibleBooks.length > 0 ? (
           <div className="book-grid">
-            {visibleBooks.map((book, index) => (
+            {visibleBooks.map((book) => (
               <article className="book-card" key={book.id}>
-                <div className={`cover cover-tone-${index % 5}`}>
+                <div className={`cover cover-tone-${coverTone(book.id)}`}>
                   {book.coverUrl ? (
                     // User-provided cover URLs can come from any host.
                     // eslint-disable-next-line @next/next/no-img-element
