@@ -14,13 +14,21 @@ Plot Pile is an offline-first, installable TBR organizer designed for phones.
 
 The existing D1 and R2 routes remain available only so an existing browser can copy its old hosted shelf into the on-device database. New edits are stored locally.
 
+## Architecture
+
+- `lib/library` contains the typed domain model, selectors, application service, migration adapter, and IndexedDB repository.
+- `app/use-library-controller.ts` is the only React boundary that coordinates persisted library state.
+- `components/library` owns the library, series, settings, and editor workflows.
+- `/api/books` and `/api/covers/:key` are temporary, read-only compatibility endpoints. They are not part of normal application operation.
+
+The version-one backup format and the `plot-pile-library` IndexedDB name are compatibility contracts. See `docs/architecture.md` and `docs/legacy-retirement.md` before changing either one.
+
 ## Development
 
 ```bash
 npm install
 npm run dev
-npm test
-npm run lint
+npm run check
 ```
 
-`npm test` performs a production build and runs the data-model and PWA contract tests.
+`npm run check` performs type checking, linting, 35 domain/storage/UI/PWA tests, and a production build.

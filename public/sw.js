@@ -1,4 +1,5 @@
-const CACHE_NAME = "plot-pile-shell-v1";
+const CACHE_VERSION = "v1";
+const CACHE_NAME = `plot-pile-shell-${CACHE_VERSION}`;
 const CORE_FILES = [
   "/",
   "/manifest.webmanifest",
