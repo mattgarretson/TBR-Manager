@@ -18,7 +18,14 @@ type BookRow = typeof books.$inferSelect;
 
 function cleanTags(tags: unknown) {
   if (!Array.isArray(tags)) return [];
-  return [...new Set(tags.filter((tag): tag is string => typeof tag === "string").map((tag) => tag.trim()).filter(Boolean))];
+  return [
+    ...new Set(
+      tags
+        .filter((tag): tag is string => typeof tag === "string")
+        .map((tag) => tag.trim().replace(/^#/, "").toLowerCase())
+        .filter(Boolean),
+    ),
+  ];
 }
 
 function toBook(row: BookRow) {

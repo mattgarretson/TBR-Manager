@@ -25,6 +25,16 @@ const emptyDraft: BookDraft = {
   coverKey: "",
 };
 
+function normalizeTags(tags: string[]) {
+  return [
+    ...new Set(
+      tags
+        .map((tag) => tag.trim().replace(/^#/, "").toLowerCase())
+        .filter(Boolean),
+    ),
+  ];
+}
+
 function getLibraryId() {
   const storageKey = "plot-pile-library-id";
   const existing = window.localStorage.getItem(storageKey);
@@ -148,14 +158,11 @@ export default function Home() {
   }
 
   function addTags(value: string) {
-    const incoming = value
-      .split(",")
-      .map((tag) => tag.trim().replace(/^#/, ""))
-      .filter(Boolean);
+    const incoming = normalizeTags(value.split(","));
     if (!incoming.length) return;
     setDraft((current) => ({
       ...current,
-      tags: [...new Set([...current.tags, ...incoming])],
+      tags: normalizeTags([...current.tags, ...incoming]),
     }));
     setTagInput("");
   }
@@ -209,9 +216,7 @@ export default function Home() {
           id: editingId,
           libraryId,
           ...draft,
-          tags: tagInput.trim()
-            ? [...new Set([...draft.tags, ...tagInput.split(",").map((tag) => tag.trim()).filter(Boolean)])]
-            : draft.tags,
+          tags: normalizeTags([...draft.tags, ...tagInput.split(",")]),
           title: draft.title.trim(),
           author: draft.author.trim(),
           reason: draft.reason.trim(),
