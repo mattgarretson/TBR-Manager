@@ -15,6 +15,11 @@ test("the app exposes the complete mobile information architecture", () => {
   assert.match(page, /Import a backup/);
   assert.match(page, /Position in series/);
   assert.match(page, /Next release date/);
+  assert.match(page, /Bookshop/);
+  assert.match(page, /Forest/);
+  assert.match(page, /Ocean/);
+  assert.match(page, /Lavender/);
+  assert.match(page, /plot-pile-theme/);
   assert.doesNotMatch(page, /Remember why you wanted to read it/);
 });
 

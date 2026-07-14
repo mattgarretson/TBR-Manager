@@ -24,6 +24,7 @@ import {
 import type { LibrarySnapshot, LocalBook, LocalSeries, SeriesStatus } from "./library-types";
 
 type ViewName = "library" | "series" | "settings";
+type ThemeName = "bookshop" | "forest" | "ocean" | "lavender";
 type BookScope = "all" | "standalone" | "incomplete" | "complete" | "upcoming";
 type SeriesScope = "all" | "incomplete" | "complete" | "upcoming";
 type SortDirection = "asc" | "desc";
@@ -77,6 +78,13 @@ type LegacyBook = {
 
 const NEW_SERIES_VALUE = "__new_series__";
 const LEGACY_IMPORT_META = "legacy-hosted-import-v1";
+const THEME_STORAGE_KEY = "plot-pile-theme";
+const THEMES: { id: ThemeName; name: string; description: string; color: string }[] = [
+  { id: "bookshop", name: "Bookshop", description: "Berry & paper", color: "#7c2942" },
+  { id: "forest", name: "Forest", description: "Sage & moss", color: "#355d45" },
+  { id: "ocean", name: "Ocean", description: "Teal & sea glass", color: "#1e6072" },
+  { id: "lavender", name: "Lavender", description: "Plum & lilac", color: "#69406f" },
+];
 
 const emptyBookDraft: BookDraft = {
   title: "",
@@ -231,6 +239,11 @@ export default function Home() {
   const [isIos] = useState(() => typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent));
   const [storagePersistent, setStoragePersistent] = useState<boolean | null>(null);
   const [canPersistStorage] = useState(() => typeof navigator !== "undefined" && Boolean(navigator.storage?.persist));
+  const [theme, setTheme] = useState<ThemeName>(() => {
+    if (typeof window === "undefined") return "bookshop";
+    const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
+    return THEMES.some((item) => item.id === saved) ? saved as ThemeName : "bookshop";
+  });
 
   async function refreshLibrary() {
     const snapshot = await readLibrary();
@@ -292,6 +305,15 @@ export default function Home() {
     const timeout = window.setTimeout(() => setNotice(""), 3200);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute(
+      "content",
+      THEMES.find((item) => item.id === theme)?.color ?? "#7c2942",
+    );
+  }, [theme]);
 
   useEffect(() => {
     if (!bookEditorOpen && !seriesEditorOpen) return;
@@ -885,6 +907,19 @@ export default function Home() {
               <span className="settings-icon" aria-hidden="true">⌂</span>
               <div><p className="eyebrow">Phone app</p><h2>{isInstalled ? "Installed" : "Install Plot Pile"}</h2>
                 {isInstalled ? <p>It is running as a standalone app on this device.</p> : installPrompt ? <><p>Install it for a home-screen icon and offline access.</p><button className="primary-button" type="button" onClick={() => void installApp()}>Install app</button></> : isIos ? <p>In Safari, tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.</p> : <p>Open your browser menu and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>}
+              </div>
+            </article>
+            <article className="settings-card theme-card">
+              <span className="settings-icon" aria-hidden="true">◐</span>
+              <div><p className="eyebrow">Color scheme</p><h2>Make it hers</h2><p>Choose a palette. The selection stays on this device.</p>
+                <div className="theme-options" role="group" aria-label="Choose a color scheme">
+                  {THEMES.map((item) => (
+                    <button className={theme === item.id ? "active" : ""} type="button" onClick={() => setTheme(item.id)} aria-pressed={theme === item.id} key={item.id}>
+                      <span className={`theme-swatch ${item.id}`} aria-hidden="true"><i /><i /><i /></span>
+                      <span><strong>{item.name}</strong><small>{item.description}</small></span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </article>
             <article className="settings-card">
