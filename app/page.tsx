@@ -165,6 +165,10 @@ export default function Home() {
     setEditorOpen(false);
   }
 
+  function toggleTag(tag: string) {
+    setActiveTag((current) => (current === tag ? "All" : tag));
+  }
+
   function addTags(value: string) {
     const incoming = normalizeTags(value.split(","));
     if (!incoming.length) return;
@@ -336,6 +340,7 @@ export default function Home() {
               className={activeTag === "All" ? "active" : ""}
               type="button"
               onClick={() => setActiveTag("All")}
+              aria-pressed={activeTag === "All"}
             >
               All <span>{books.length}</span>
             </button>
@@ -343,7 +348,8 @@ export default function Home() {
               <button
                 className={activeTag === tag ? "active" : ""}
                 type="button"
-                onClick={() => setActiveTag(tag)}
+                onClick={() => toggleTag(tag)}
+                aria-pressed={activeTag === tag}
                 key={tag}
               >
                 {tag} <span>{count}</span>
@@ -403,7 +409,12 @@ export default function Home() {
                   {book.tags.length > 0 && (
                     <div className="book-tags" aria-label="Tropes and tags">
                       {book.tags.map((tag) => (
-                        <button type="button" onClick={() => setActiveTag(tag)} key={tag}>
+                        <button
+                          type="button"
+                          onClick={() => toggleTag(tag)}
+                          aria-pressed={activeTag === tag}
+                          key={tag}
+                        >
                           {tag}
                         </button>
                       ))}
