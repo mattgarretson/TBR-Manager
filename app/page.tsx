@@ -2,8 +2,16 @@
 
 import { FormEvent, KeyboardEvent, useEffect, useMemo, useState } from "react";
 
+type SeriesSummary = {
+  id: string;
+  name: string;
+  status: "complete" | "incomplete";
+  nextReleaseDate: string;
+};
+
 type Book = {
   id: string;
+  seriesId: string | null;
   title: string;
   author: string;
   reason: string;
@@ -12,9 +20,20 @@ type Book = {
   coverKey: string;
   createdAt: string;
   updatedAt: string;
+  series: SeriesSummary | null;
 };
 
-type BookDraft = Omit<Book, "id" | "createdAt" | "updatedAt">;
+type BookDraft = {
+  title: string;
+  author: string;
+  reason: string;
+  tags: string[];
+  coverUrl: string;
+  coverKey: string;
+  seriesName: string;
+  seriesStatus: "complete" | "incomplete";
+  nextReleaseDate: string;
+};
 
 const emptyDraft: BookDraft = {
   title: "",
@@ -23,6 +42,9 @@ const emptyDraft: BookDraft = {
   tags: [],
   coverUrl: "",
   coverKey: "",
+  seriesName: "",
+  seriesStatus: "incomplete",
+  nextReleaseDate: "",
 };
 
 function normalizeTags(tags: string[]) {
@@ -61,13 +83,23 @@ function coverTone(bookId: string) {
   return hash % 5;
 }
 
+function formatReleaseDate(value: string) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function Home() {
   const [books, setBooks] = useState<Book[]>([]);
+  const [seriesOptions, setSeriesOptions] = useState<SeriesSummary[]>([]);
   const [libraryId, setLibraryId] = useState("");
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState("All");
   const [sort, setSort] = useState("newest");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<BookDraft>(emptyDraft);
@@ -83,9 +115,14 @@ export default function Home() {
     setError("");
     try {
       const response = await fetch(`/api/books?libraryId=${encodeURIComponent(id)}`);
-      const payload = (await response.json()) as { books?: Book[]; error?: string };
+      const payload = (await response.json()) as {
+        books?: Book[];
+        series?: SeriesSummary[];
+        error?: string;
+      };
       if (!response.ok) throw new Error(payload.error || "Could not load your shelf.");
       setBooks(payload.books ?? []);
+      setSeriesOptions(payload.series ?? []);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not load your shelf.");
     } finally {
@@ -119,19 +156,20 @@ export default function Home() {
       const matchesTag = activeTag === "All" || book.tags.includes(activeTag);
       const matchesQuery =
         !needle ||
-        [book.title, book.author, book.reason, ...book.tags]
+        [book.title, book.author, book.reason, book.series?.name ?? "", ...book.tags]
           .join(" ")
           .toLowerCase()
           .includes(needle);
       return matchesTag && matchesQuery;
     });
 
+    const direction = sortDirection === "asc" ? 1 : -1;
     return filtered.sort((a, b) => {
-      if (sort === "title") return a.title.localeCompare(b.title);
-      if (sort === "author") return a.author.localeCompare(b.author);
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (sort === "title") return a.title.localeCompare(b.title) * direction;
+      if (sort === "author") return a.author.localeCompare(b.author) * direction;
+      return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * direction;
     });
-  }, [books, query, activeTag, sort]);
+  }, [books, query, activeTag, sort, sortDirection]);
 
   function openNewBook() {
     setEditingId(null);
@@ -152,6 +190,9 @@ export default function Home() {
       tags: book.tags,
       coverUrl: book.coverUrl,
       coverKey: book.coverKey,
+      seriesName: book.series?.name ?? "",
+      seriesStatus: book.series?.status ?? "incomplete",
+      nextReleaseDate: book.series?.nextReleaseDate ?? "",
     });
     setTagInput("");
     setCoverFile(null);
@@ -167,6 +208,22 @@ export default function Home() {
 
   function toggleTag(tag: string) {
     setActiveTag((current) => (current === tag ? "All" : tag));
+  }
+
+  function updateSeriesName(value: string) {
+    const match = seriesOptions.find(
+      (item) => item.name.toLowerCase() === value.trim().toLowerCase(),
+    );
+    setDraft((current) => ({
+      ...current,
+      seriesName: value,
+      ...(match
+        ? {
+            seriesStatus: match.status,
+            nextReleaseDate: match.nextReleaseDate,
+          }
+        : {}),
+    }));
   }
 
   function addTags(value: string) {
@@ -234,17 +291,21 @@ export default function Home() {
           reason: draft.reason.trim(),
           coverUrl,
           coverKey,
+          series: draft.seriesName.trim()
+            ? {
+                name: draft.seriesName.trim(),
+                status: draft.seriesStatus,
+                nextReleaseDate:
+                  draft.seriesStatus === "incomplete" ? draft.nextReleaseDate : "",
+              }
+            : null,
         }),
       });
       const payload = (await response.json()) as { book?: Book; error?: string };
       if (!response.ok || !payload.book) throw new Error(payload.error || "Could not save this book.");
 
-      setBooks((current) =>
-        editingId
-          ? current.map((book) => (book.id === editingId ? payload.book! : book))
-          : [payload.book!, ...current],
-      );
       setEditorOpen(false);
+      await loadBooks(libraryId);
       setNotice(editingId ? "Book updated" : "Added to your TBR");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not save this book.");
@@ -282,45 +343,32 @@ export default function Home() {
         </button>
       </header>
 
-      <section className="hero" id="top">
-        <div>
-          <p className="eyebrow">Your beautifully unhinged reading list</p>
-          <h1>Remember why you wanted to read it.</h1>
-          <p className="hero-copy">
-            Titles, authors, every last trope, and the tiny note that saves you from asking,
-            “wait—why is this on my list?”
-          </p>
-        </div>
-        <div className="shelf-stats" aria-label="TBR summary">
-          <div>
-            <strong>{books.length}</strong>
-            <span>books waiting</span>
-          </div>
-          <div>
-            <strong>{allTags.length}</strong>
-            <span>tropes collected</span>
-          </div>
-          <div className="top-trope">
-            <strong>{allTags[0]?.[0] ?? "Your next obsession"}</strong>
-            <span>{allTags.length ? "top trope" : "starts here"}</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="library" aria-labelledby="library-title">
+      <section className="library" id="top" aria-labelledby="library-title">
         <div className="library-heading">
           <div>
             <p className="section-kicker">The pile</p>
             <h2 id="library-title">My TBR</h2>
           </div>
-          <label className="sort-control">
-            <span>Sort</span>
-            <select value={sort} onChange={(event) => setSort(event.target.value)}>
-              <option value="newest">Recently added</option>
-              <option value="title">Book title</option>
-              <option value="author">Author</option>
-            </select>
-          </label>
+          <div className="sort-tools" aria-label="Sort books">
+            <label className="sort-control">
+              <span>Sort by</span>
+              <select value={sort} onChange={(event) => setSort(event.target.value)}>
+                <option value="newest">Date added</option>
+                <option value="title">Book title</option>
+                <option value="author">Author</option>
+              </select>
+            </label>
+            <button
+              className="sort-direction"
+              type="button"
+              onClick={() => setSortDirection((current) => (current === "asc" ? "desc" : "asc"))}
+              aria-label={`Sort ${sortDirection === "asc" ? "descending" : "ascending"}`}
+              title={`Currently ${sortDirection === "asc" ? "ascending" : "descending"}`}
+            >
+              <span aria-hidden="true">{sortDirection === "asc" ? "↑" : "↓"}</span>
+              {sortDirection === "asc" ? "Asc" : "Desc"}
+            </button>
+          </div>
         </div>
 
         <label className="search-field">
@@ -406,6 +454,19 @@ export default function Home() {
                       Edit
                     </button>
                   </div>
+                  {book.series && (
+                    <div className="series-meta">
+                      <span className="series-name">{book.series.name}</span>
+                      <span className={`series-status ${book.series.status}`}>
+                        {book.series.status === "complete" ? "Complete series" : "Incomplete series"}
+                      </span>
+                      {book.series.status === "incomplete" && book.series.nextReleaseDate && (
+                        <time dateTime={book.series.nextReleaseDate}>
+                          Next book: {formatReleaseDate(book.series.nextReleaseDate)}
+                        </time>
+                      )}
+                    </div>
+                  )}
                   {book.tags.length > 0 && (
                     <div className="book-tags" aria-label="Tropes and tags">
                       {book.tags.map((tag) => (
@@ -543,6 +604,67 @@ export default function Home() {
                   />
                 </label>
               </div>
+
+              <fieldset className="series-fields">
+                <legend>
+                  Series details <span>Optional</span>
+                </legend>
+                <label className="form-field">
+                  <span>Series name</span>
+                  <input
+                    list="series-options"
+                    value={draft.seriesName}
+                    onChange={(event) => updateSeriesName(event.target.value)}
+                    placeholder="Start typing to link an existing series"
+                  />
+                </label>
+                <datalist id="series-options">
+                  {seriesOptions.map((item) => (
+                    <option value={item.name} key={item.id} />
+                  ))}
+                </datalist>
+                {draft.seriesName.trim() && (
+                  <>
+                    <p className="series-help">
+                      Books with the same series name share this status and release date.
+                    </p>
+                    <div className="field-row series-row">
+                      <label className="form-field">
+                        <span>Series status</span>
+                        <select
+                          value={draft.seriesStatus}
+                          onChange={(event) =>
+                            setDraft((current) => ({
+                              ...current,
+                              seriesStatus: event.target.value as "complete" | "incomplete",
+                              nextReleaseDate:
+                                event.target.value === "complete" ? "" : current.nextReleaseDate,
+                            }))
+                          }
+                        >
+                          <option value="incomplete">Incomplete</option>
+                          <option value="complete">Complete</option>
+                        </select>
+                      </label>
+                      {draft.seriesStatus === "incomplete" && (
+                        <label className="form-field">
+                          <span>Next book release</span>
+                          <input
+                            type="date"
+                            value={draft.nextReleaseDate}
+                            onChange={(event) =>
+                              setDraft((current) => ({
+                                ...current,
+                                nextReleaseDate: event.target.value,
+                              }))
+                            }
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </>
+                )}
+              </fieldset>
 
               <label className="form-field">
                 <span>Why did you want to read it?</span>
