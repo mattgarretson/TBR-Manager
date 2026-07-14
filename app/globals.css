@@ -169,18 +169,20 @@ label:has(input[type="file"]):focus-within {
 
 .app-shell {
   min-height: 100vh;
-  padding-bottom: calc(94px + env(safe-area-inset-bottom));
+  padding-bottom: calc(88px + env(safe-area-inset-bottom));
 }
 
 .topbar {
   position: sticky;
   z-index: 30;
   top: 0;
-  min-height: 68px;
-  padding: 0 16px;
+  min-height: calc(112px + env(safe-area-inset-top));
+  padding: calc(10px + env(safe-area-inset-top)) 14px 8px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 8px 12px;
   border-bottom: 1px solid rgba(216, 202, 187, 0.86);
   background: var(--header-glass);
   backdrop-filter: blur(14px);
@@ -217,7 +219,30 @@ label:has(input[type="file"]):focus-within {
   transform: rotate(-3deg);
 }
 
-.desktop-nav,
+.main-nav {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.main-nav button {
+  min-height: 39px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.main-nav button.active {
+  background: var(--nav-active);
+  color: var(--berry);
+}
+
 .desktop-add { display: none; }
 
 .page {
@@ -870,7 +895,7 @@ h1,
   position: fixed;
   z-index: 35;
   right: 18px;
-  bottom: calc(76px + env(safe-area-inset-bottom));
+  bottom: calc(18px + env(safe-area-inset-bottom));
   width: 58px;
   height: 58px;
   border: 0;
@@ -881,41 +906,6 @@ h1,
   box-shadow: 0 12px 28px rgba(92, 24, 48, 0.34);
   cursor: pointer;
 }
-
-.mobile-nav {
-  position: fixed;
-  z-index: 32;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  min-height: calc(65px + env(safe-area-inset-bottom));
-  padding: 7px 62px env(safe-area-inset-bottom) 7px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  border-top: 1px solid var(--line);
-  background: var(--surface-glass);
-  backdrop-filter: blur(14px);
-}
-
-.mobile-nav button {
-  min-width: 0;
-  padding: 3px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: #8a7c74;
-  font-size: 0.55rem;
-  font-weight: 780;
-  cursor: pointer;
-}
-
-.mobile-nav button span { font-size: 0.9rem; line-height: 1; }
-.mobile-nav button.active { background: var(--nav-active); color: var(--berry); }
 
 .dialog-backdrop {
   position: fixed;
@@ -1100,7 +1090,7 @@ h1,
   position: fixed;
   z-index: 90;
   right: 14px;
-  bottom: calc(77px + env(safe-area-inset-bottom));
+  bottom: calc(18px + env(safe-area-inset-bottom));
   left: 14px;
   padding: 12px 15px;
   border-radius: 999px;
@@ -1120,10 +1110,12 @@ h1,
 
   .topbar {
     width: min(1120px, calc(100% - 40px));
-    min-height: 78px;
+    min-height: calc(78px + env(safe-area-inset-top));
     margin: 0 auto;
-    padding: 0;
+    padding: env(safe-area-inset-top) 0 0;
     position: relative;
+    flex-wrap: nowrap;
+    gap: 20px;
     background: transparent;
     backdrop-filter: none;
   }
@@ -1131,9 +1123,8 @@ h1,
   .brand { font-size: 1.3rem; }
   .brand-mark { width: 34px; height: 42px; }
 
-  .desktop-nav { display: flex; gap: 5px; }
-  .desktop-nav button { min-height: 39px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-size: 0.72rem; font-weight: 780; cursor: pointer; }
-  .desktop-nav button.active { background: var(--nav-active); color: var(--berry); }
+  .main-nav { width: auto; display: flex; gap: 5px; }
+  .main-nav button { padding: 0 14px; border-radius: 999px; font-size: 0.72rem; font-weight: 780; }
   .desktop-add { display: inline-flex; }
 
   .page { width: min(1120px, calc(100% - 40px)); padding-top: 48px; }
@@ -1173,8 +1164,7 @@ h1,
   .theme-options { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .danger-card { grid-column: 1 / -1; }
 
-  .mobile-fab,
-  .mobile-nav { display: none; }
+  .mobile-fab { display: none; }
 
   .dialog-backdrop { padding: 28px; place-items: center; }
   .dialog { width: min(720px, 100%); max-height: calc(100vh - 56px); padding: 28px; border-radius: 22px; }

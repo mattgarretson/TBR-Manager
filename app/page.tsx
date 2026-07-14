@@ -705,10 +705,10 @@ export default function Home() {
           <span className="brand-mark">PP</span>
           <span>Plot Pile</span>
         </button>
-        <nav className="desktop-nav" aria-label="Main navigation">
-          <button className={view === "library" ? "active" : ""} type="button" onClick={() => changeView("library")}>Library</button>
-          <button className={view === "series" ? "active" : ""} type="button" onClick={() => changeView("series")}>Series</button>
-          <button className={view === "settings" ? "active" : ""} type="button" onClick={() => changeView("settings")}>More</button>
+        <nav className="main-nav" aria-label="Main navigation">
+          <button className={view === "library" ? "active" : ""} type="button" aria-current={view === "library" ? "page" : undefined} onClick={() => changeView("library")}>Library</button>
+          <button className={view === "series" ? "active" : ""} type="button" aria-current={view === "series" ? "page" : undefined} onClick={() => changeView("series")}>Series</button>
+          <button className={view === "settings" ? "active" : ""} type="button" aria-current={view === "settings" ? "page" : undefined} onClick={() => changeView("settings")}>More</button>
         </nav>
         <button className="primary-button desktop-add" type="button" onClick={() => openNewBook()}>
           <span aria-hidden="true">＋</span> Add book
@@ -945,11 +945,6 @@ export default function Home() {
       )}
 
       <button className="mobile-fab" type="button" onClick={() => openNewBook()} aria-label="Add a book">＋</button>
-      <nav className="mobile-nav" aria-label="Main navigation">
-        <button className={view === "library" ? "active" : ""} type="button" onClick={() => changeView("library")}><span aria-hidden="true">▤</span>Library</button>
-        <button className={view === "series" ? "active" : ""} type="button" onClick={() => changeView("series")}><span aria-hidden="true">▥</span>Series</button>
-        <button className={view === "settings" ? "active" : ""} type="button" onClick={() => changeView("settings")}><span aria-hidden="true">•••</span>More</button>
-      </nav>
 
       {bookEditorOpen && (
         <div className="dialog-backdrop">
