@@ -94,7 +94,11 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
   async function saveSeries(input: SaveSeriesInput) {
     const result = await command(() => service.saveSeries(input));
     setSnapshot(result.snapshot);
-    setNotice(result.created ? "Series created" : "Series updated everywhere");
+    setNotice(result.created
+      ? result.booksCreated
+        ? `Series and ${result.booksCreated} ${result.booksCreated === 1 ? "book" : "books"} added`
+        : "Series created"
+      : "Series updated everywhere");
     return result;
   }
 

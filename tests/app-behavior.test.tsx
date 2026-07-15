@@ -8,9 +8,10 @@ import { snapshot, timestamp } from "./fixtures/library";
 
 function renderApp(initial = snapshot) {
   const repository = new MemoryLibraryRepository(initial);
+  let generatedId = 0;
   const service = new LibraryService(repository, {
     now: () => new Date(timestamp),
-    createId: () => "created-id",
+    createId: () => `created-id-${generatedId++}`,
   });
   const migrate = vi.fn().mockResolvedValue({ importedBooks: 0, localizedCovers: 0, pendingCovers: 0 });
   render(<PlotPileApp controllerDependencies={{ repository, service, migrate }} />);
@@ -71,5 +72,67 @@ describe("Plot Pile behavior", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     await waitFor(() => expect(document.activeElement).toBe(editButton));
     expect(confirm).toHaveBeenCalledTimes(2);
+  });
+
+  it("creates a series with an editable batch of inherited-author books", async () => {
+    const user = userEvent.setup();
+    const { repository } = renderApp({ books: [], series: [] });
+    await screen.findByRole("heading", { name: "My TBR" });
+    await user.click(screen.getByRole("button", { name: "Series" }));
+    await user.click(screen.getByRole("button", { name: "New series" }));
+    await user.type(screen.getByRole("textbox", { name: "Series name" }), "He Who Fights With Monsters");
+    await user.type(screen.getByRole("textbox", { name: "Series author" }), "Shirtaloon");
+    await user.click(screen.getByRole("radio", { name: /Numbered titles/ }));
+    await user.type(screen.getByRole("textbox", { name: "Book title" }), "He Who Fights With Monsters");
+    const count = screen.getByRole("spinbutton", { name: "How many?" });
+    await user.clear(count);
+    await user.type(count, "3");
+    await user.click(screen.getByRole("button", { name: "Preview books" }));
+    const secondTitle = screen.getByRole("textbox", { name: "Title for book 2" });
+    await user.clear(secondTitle);
+    await user.type(secondTitle, "A Fancy Exception");
+    await user.click(screen.getByRole("button", { name: "Create series + 3" }));
+    await waitFor(() => expect(repository.snapshot.books).toHaveLength(3));
+    expect(repository.snapshot.series[0]).toMatchObject({ author: "Shirtaloon" });
+    expect(repository.snapshot.books).toEqual(expect.arrayContaining([
+      expect.objectContaining({ title: "He Who Fights With Monsters 1", author: "Shirtaloon", seriesPosition: "1" }),
+      expect.objectContaining({ title: "A Fancy Exception", author: "Shirtaloon", seriesPosition: "2" }),
+    ]));
+  });
+
+  it("turns a pasted reading-order list into individually titled books", async () => {
+    const user = userEvent.setup();
+    const { repository } = renderApp({ books: [], series: [] });
+    await screen.findByRole("heading", { name: "My TBR" });
+    await user.click(screen.getByRole("button", { name: "Series" }));
+    await user.click(screen.getByRole("button", { name: "New series" }));
+    await user.type(screen.getByRole("textbox", { name: "Series name" }), "Cradle");
+    await user.type(screen.getByRole("textbox", { name: "Series author" }), "Will Wight");
+    await user.click(screen.getByRole("radio", { name: /Individual titles/ }));
+    await user.type(screen.getByRole("textbox", { name: /Book titles/ }), "1. Unsouled{enter}2 | Soulsmith");
+    await user.click(screen.getByRole("button", { name: "Preview books" }));
+    await user.click(screen.getByRole("button", { name: "Create series + 2" }));
+    await waitFor(() => expect(repository.snapshot.books).toHaveLength(2));
+    expect(repository.snapshot.books).toEqual(expect.arrayContaining([
+      expect.objectContaining({ title: "Unsouled", seriesPosition: "1", author: "Will Wight" }),
+      expect.objectContaining({ title: "Soulsmith", seriesPosition: "2", author: "Will Wight" }),
+    ]));
+  });
+
+  it("prefills the series author and next position, then stays open to add another", async () => {
+    const user = userEvent.setup();
+    const { repository } = renderApp();
+    await screen.findByText("Book One");
+    await user.click(screen.getByRole("button", { name: "Series" }));
+    await user.click(screen.getByRole("button", { name: "Add next book" }));
+    expect((screen.getByRole("textbox", { name: "Author" }) as HTMLInputElement).value).toBe("A. Writer");
+    expect((screen.getByRole("textbox", { name: "Position in series" }) as HTMLInputElement).value).toBe("2");
+    await user.type(screen.getByRole("textbox", { name: "Book title" }), "Book Two");
+    await user.click(screen.getByRole("button", { name: "Save & add another" }));
+    await waitFor(() => expect(repository.snapshot.books).toHaveLength(2));
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect((screen.getByRole("textbox", { name: "Book title" }) as HTMLInputElement).value).toBe("");
+    expect((screen.getByRole("textbox", { name: "Author" }) as HTMLInputElement).value).toBe("A. Writer");
+    expect((screen.getByRole("textbox", { name: "Position in series" }) as HTMLInputElement).value).toBe("3");
   });
 });

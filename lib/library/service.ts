@@ -59,6 +59,7 @@ export class LibraryService {
         id: this.createId(),
         name,
         nameKey,
+        author: input.newSeries.author.trim() || author,
         status: input.newSeries.status,
         nextReleaseTitle: input.newSeries.status === "incomplete" ? input.newSeries.nextReleaseTitle.trim() : "",
         nextReleaseDate: input.newSeries.status === "incomplete" ? input.newSeries.nextReleaseDate : "",
@@ -86,13 +87,14 @@ export class LibraryService {
     return { snapshot: await this.repository.read(), created: !existing };
   }
 
-  async saveSeries(input: SaveSeriesInput): Promise<{ snapshot: LibrarySnapshot; created: boolean }> {
+  async saveSeries(input: SaveSeriesInput): Promise<{ snapshot: LibrarySnapshot; created: boolean; booksCreated: number }> {
     const snapshot = await this.repository.read();
     const existing = input.id ? snapshot.series.find((series) => series.id === input.id) : undefined;
     if (input.id && !existing) throw new Error("That series no longer exists.");
     const name = cleanSeriesName(input.name);
     if (!name) throw new Error("Give the series a name.");
     const nameKey = seriesNameKey(name);
+    const author = input.author.trim();
     if (snapshot.series.some((item) => item.id !== input.id && item.nameKey === nameKey)) {
       throw new Error("A series with that name already exists.");
     }
@@ -100,10 +102,16 @@ export class LibraryService {
       throw new Error("Next release date must be a valid calendar date.");
     }
     const now = this.now().toISOString();
+    const requestedBooks = input.books ?? [];
+    if (requestedBooks.length && !author) {
+      throw new Error("Add the series author before creating its books.");
+    }
+    const seriesId = existing?.id ?? this.createId();
     const series: Series = {
-      id: existing?.id ?? this.createId(),
+      id: seriesId,
       name,
       nameKey,
+      author,
       status: input.status,
       nextReleaseTitle: input.status === "incomplete" ? input.nextReleaseTitle.trim() : "",
       nextReleaseDate: input.status === "incomplete" ? input.nextReleaseDate : "",
@@ -111,8 +119,32 @@ export class LibraryService {
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
-    await this.repository.saveSeries(series);
-    return { snapshot: await this.repository.read(), created: !existing };
+    const positions = new Set<string>();
+    const books: Book[] = requestedBooks.map((item) => {
+      const title = item.title.trim();
+      const seriesPosition = item.seriesPosition.trim();
+      if (!title) throw new Error("Every book in the series needs a title.");
+      if (seriesPosition && positions.has(seriesPosition)) {
+        throw new Error(`Book position ${seriesPosition} appears more than once.`);
+      }
+      if (seriesPosition) positions.add(seriesPosition);
+      return {
+        id: this.createId(),
+        title,
+        author,
+        reason: "",
+        tags: [],
+        coverImage: "",
+        seriesId,
+        seriesPosition,
+        releaseDate: "",
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
+    if (books.length) await this.repository.saveSeriesWithBooks(series, books);
+    else await this.repository.saveSeries(series);
+    return { snapshot: await this.repository.read(), created: !existing, booksCreated: books.length };
   }
 
   async deleteBook(id: string) {

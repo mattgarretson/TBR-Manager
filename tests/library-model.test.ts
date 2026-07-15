@@ -4,6 +4,7 @@ import {
   currentLocalDate,
   isCalendarDate,
   nextSeriesRelease,
+  nextSeriesPosition,
   normalizeTags,
   parseBackup,
   seriesNameKey,
@@ -33,6 +34,15 @@ describe("library domain model", () => {
       { ...book, id: "unknown", title: "Unknown", seriesPosition: "" },
     ];
     expect(sortSeriesBooks(books).map((item) => item.title)).toEqual(["Two", "Novella", "Ten", "Unknown"]);
+  });
+
+  it("suggests the next numeric series position", () => {
+    expect(nextSeriesPosition([
+      { ...book, seriesPosition: "1" },
+      { ...book, id: "novella", seriesPosition: "2.5" },
+      { ...book, id: "third", seriesPosition: "3" },
+    ], series.id)).toBe("4");
+    expect(nextSeriesPosition([], series.id)).toBe("1");
   });
 
   it("chooses the nearest constituent release and hides complete-series warnings", () => {

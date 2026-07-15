@@ -107,7 +107,7 @@ export function selectSeriesCards(input: {
       const scopeMatches = scope === "all" || item.status === scope || (scope === "upcoming" && Boolean(next));
       const searchMatches =
         !needle ||
-        [item.name, item.notes, ...books.flatMap((book) => [book.title, book.author])]
+        [item.name, item.author, item.notes, ...books.flatMap((book) => [book.title, book.author])]
           .join(" ")
           .toLocaleLowerCase("en-US")
           .includes(needle);
@@ -123,4 +123,3 @@ export function selectSeriesCards(input: {
       return compareText(left.item.name, right.item.name, direction);
     });
 }
-

@@ -158,6 +158,7 @@ export function PlotPileApp({
           key={bookEditor.book?.id ?? `new-${bookEditor.preselectedSeriesId ?? "standalone"}`}
           book={bookEditor.book}
           preselectedSeriesId={bookEditor.preselectedSeriesId}
+          books={books}
           series={series}
           saving={library.saving}
           error={library.error}
@@ -174,6 +175,7 @@ export function PlotPileApp({
           linkedBookCount={seriesEditor.series ? books.filter((book) => book.seriesId === seriesEditor.series?.id).length : 0}
           saving={library.saving}
           error={library.error}
+          setError={library.setError}
           clearError={library.dismissError}
           onSave={library.saveSeries}
           onDelete={removeSeries}

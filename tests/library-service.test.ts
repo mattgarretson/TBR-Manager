@@ -20,21 +20,48 @@ describe("LibraryService", () => {
       seriesId: null,
       seriesPosition: "1",
       releaseDate: "",
-      newSeries: { name: " Saga ", status: "incomplete", nextReleaseTitle: "Next", nextReleaseDate: "2028-01-01" },
+      newSeries: { name: " Saga ", author: " Writer ", status: "incomplete", nextReleaseTitle: "Next", nextReleaseDate: "2028-01-01" },
     });
     expect(result.created).toBe(true);
-    expect(result.snapshot.series[0]).toMatchObject({ id: "series-new", name: "Saga" });
+    expect(result.snapshot.series[0]).toMatchObject({ id: "series-new", name: "Saga", author: "Writer" });
     expect(result.snapshot.books[0]).toMatchObject({ id: "book-new", seriesId: "series-new", tags: ["slow burn"] });
   });
 
   it("rejects duplicate series and preserves backup compatibility", async () => {
     const repository = new MemoryLibraryRepository(snapshot);
     const service = new LibraryService(repository, { now: () => new Date(timestamp), createId: () => "new" });
-    await expect(service.saveSeries({ name: series.name.toUpperCase(), status: "complete", nextReleaseTitle: "", nextReleaseDate: "", notes: "" }))
+    await expect(service.saveSeries({ name: series.name.toUpperCase(), author: series.author, status: "complete", nextReleaseTitle: "", nextReleaseDate: "", notes: "" }))
       .rejects.toThrow("already exists");
     const backup = service.createBackup(snapshot);
     await repository.replace({ books: [], series: [] });
     expect(await service.restoreBackup(backup)).toEqual(snapshot);
+  });
+
+  it("creates a series and several inherited-author books atomically", async () => {
+    const repository = new MemoryLibraryRepository();
+    const ids = ["series-new", "book-1", "book-2"];
+    const service = new LibraryService(repository, {
+      now: () => new Date(timestamp),
+      createId: () => ids.shift()!,
+    });
+    const result = await service.saveSeries({
+      name: "Cradle",
+      author: "Will Wight",
+      status: "complete",
+      nextReleaseTitle: "",
+      nextReleaseDate: "",
+      notes: "",
+      books: [
+        { title: "Unsouled", seriesPosition: "1" },
+        { title: "Soulsmith", seriesPosition: "2" },
+      ],
+    });
+    expect(result).toMatchObject({ created: true, booksCreated: 2 });
+    expect(repository.snapshot.series[0]).toMatchObject({ id: "series-new", author: "Will Wight" });
+    expect(repository.snapshot.books).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "book-1", title: "Unsouled", author: "Will Wight", seriesId: "series-new", seriesPosition: "1" }),
+      expect.objectContaining({ id: "book-2", title: "Soulsmith", author: "Will Wight", seriesId: "series-new", seriesPosition: "2" }),
+    ]));
   });
 
   it("updates and deletes existing records", async () => {

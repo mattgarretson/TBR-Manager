@@ -39,7 +39,7 @@ export function SeriesView({
     <section className="page" aria-labelledby="series-title">
       <div className="page-heading">
         <div><p className="eyebrow">Keep the cliffhangers organized</p><h1 id="series-title">Series</h1></div>
-        <button className="secondary-button heading-action" type="button" onClick={onAddSeries}>＋ New series</button>
+        <button className="secondary-button heading-action" type="button" onClick={onAddSeries} aria-label="New series">＋ New series</button>
       </div>
       <label className="search-field series-search">
         <span aria-hidden="true">⌕</span>
@@ -50,8 +50,8 @@ export function SeriesView({
         <div className="filter-row" aria-label="Filter series">
           {([
             ["all", `All ${series.length}`],
-            ["incomplete", `Incomplete ${incompleteCount}`],
-            ["complete", "Complete"],
+            ["incomplete", `Ongoing ${incompleteCount}`],
+            ["complete", "Finished"],
             ["upcoming", `Upcoming ${upcomingCount}`],
           ] as [SeriesScope, string][]).map(([value, label]) => (
             <button className={scope === value ? "active" : ""} type="button" onClick={() => setScope(value)} aria-pressed={scope === value} key={value}>{label}</button>
@@ -68,7 +68,7 @@ export function SeriesView({
           {cards.map(({ item, books: linkedBooks, next }) => (
             <article className="series-card" key={item.id}>
               <div className="series-card-heading">
-                <div><span className={`status-badge ${item.status}`}>{item.status === "complete" ? "Complete series" : "Incomplete series"}</span><h2>{item.name}</h2><p>{linkedBooks.length} {linkedBooks.length === 1 ? "book" : "books"} linked</p></div>
+                <div><span className={`status-badge ${item.status}`}>{item.status === "complete" ? "Finished publishing" : "Ongoing series"}</span><h2>{item.name}</h2>{item.author && <p>by {item.author}</p>}<p>{linkedBooks.length} {linkedBooks.length === 1 ? "book" : "books"} linked</p></div>
                 <button className="text-action" type="button" onClick={() => onEditSeries(item)}>Edit series</button>
               </div>
               {next && <div className="release-callout"><span>Next release</span><strong>{next.title}</strong><time dateTime={next.date}>{formatDate(next.date)}</time></div>}
@@ -86,7 +86,7 @@ export function SeriesView({
                   ))}
                 </ol>
               ) : <p className="empty-series">No books linked yet.</p>}
-              <button className="add-to-series" type="button" onClick={() => onAddBook(item.id)}>＋ Add a book to this series</button>
+              <button className="add-to-series" type="button" onClick={() => onAddBook(item.id)} aria-label={linkedBooks.length ? "Add next book" : "Add first book"}>＋ {linkedBooks.length ? "Add next book" : "Add first book"}</button>
             </article>
           ))}
         </div>

@@ -62,8 +62,9 @@ describe("library selectors", () => {
     expect(cards[0].books).toHaveLength(1);
     expect(selectSeriesCards({ cards, query: "Book One", scope: "all", sort: "name", direction: "asc" }))
       .toHaveLength(1);
+    expect(selectSeriesCards({ cards, query: "A. Writer", scope: "all", sort: "name", direction: "asc" }))
+      .toHaveLength(2);
     expect(selectSeriesCards({ cards, query: "", scope: "complete", sort: "name", direction: "asc" })[0].item.id)
       .toBe(complete.id);
   });
 });
-

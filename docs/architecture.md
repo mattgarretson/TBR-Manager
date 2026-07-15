@@ -15,9 +15,11 @@ Plot Pile is a single-user, device-local application. IndexedDB is the authorita
 - Book and series IDs are stable strings.
 - Series names use one normalized, English-locale case-insensitive key.
 - Creating a new series from the book editor writes the series and book in one IndexedDB transaction.
+- Creating a series with a batch of books writes the series and every generated book in one IndexedDB transaction.
+- A series author is a default copied onto new books; each book keeps its own author so exceptions and later unlinking remain safe.
 - Deleting a series and unlinking its books is one transaction.
 - Release dates are empty or valid `YYYY-MM-DD` calendar dates.
-- Backup version 1 remains readable and writable. Duplicate IDs/name keys and impossible dates are rejected before replacing the current library.
+- Backup version 1 remains readable and writable. Older backups without a series author infer it when every linked book has the same author. Duplicate IDs/name keys and impossible dates are rejected before replacing the current library.
 - Hosted R2 cover URLs are not considered migrated until their bytes have been copied into the local `coverImage` representation.
 
 ## Change rules
@@ -27,4 +29,3 @@ Plot Pile is a single-user, device-local application. IndexedDB is the authorita
 - Never rename `plot-pile-library` or increment its schema version without an upgrade fixture covering an existing database.
 - Keep ordinary app startup free of D1/R2 requests. Only a device with the old local library UUID or a pending hosted cover may use the compatibility routes.
 - Run `npm run check` before each refactoring commit.
-

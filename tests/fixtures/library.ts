@@ -6,6 +6,7 @@ export const series: Series = {
   id: "series-1",
   name: "The Night Court",
   nameKey: "the night court",
+  author: "A. Writer",
   status: "incomplete",
   nextReleaseTitle: "The Last Door",
   nextReleaseDate: "2027-09-01",
@@ -29,4 +30,3 @@ export const book: Book = {
 };
 
 export const snapshot: LibrarySnapshot = { books: [book], series: [series] };
-

@@ -4,6 +4,7 @@ export interface LibraryRepository {
   read(): Promise<LibrarySnapshot>;
   commitBook(book: Book, seriesToCreate?: Series): Promise<void>;
   saveSeries(series: Series): Promise<void>;
+  saveSeriesWithBooks(series: Series, books: Book[]): Promise<void>;
   deleteBook(id: string): Promise<void>;
   deleteSeries(id: string, updatedAt: string): Promise<void>;
   replace(snapshot: LibrarySnapshot): Promise<void>;
@@ -11,4 +12,3 @@ export interface LibraryRepository {
   readMeta(key: string): Promise<string | null>;
   writeMeta(key: string, value: string): Promise<void>;
 }
-

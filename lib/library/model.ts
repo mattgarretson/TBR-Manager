@@ -56,6 +56,17 @@ export function sortSeriesBooks(books: readonly Book[]): Book[] {
   });
 }
 
+export function nextSeriesPosition(books: readonly Book[], seriesId: string): string {
+  const linkedBooks = books.filter((book) => book.seriesId === seriesId);
+  const numericPositions = linkedBooks
+    .map((book) => book.seriesPosition.trim())
+    .filter((position) => /^\d+(?:\.\d+)?$/.test(position))
+    .map(Number)
+    .filter(Number.isFinite);
+  if (numericPositions.length) return String(Math.floor(Math.max(...numericPositions)) + 1);
+  return String(linkedBooks.length + 1);
+}
+
 export function nextSeriesRelease(
   series: Series,
   books: readonly Book[],
@@ -135,6 +146,7 @@ export function parseBackup(value: unknown, now = new Date().toISOString()): Lib
       id,
       name,
       nameKey,
+      author: requiredText(item.author).trim(),
       status,
       nextReleaseTitle: status === "complete" ? "" : requiredText(item.nextReleaseTitle),
       nextReleaseDate: status === "complete" ? "" : validateOptionalDate(requiredText(item.nextReleaseDate), "series release date"),
@@ -172,5 +184,17 @@ export function parseBackup(value: unknown, now = new Date().toISOString()): Lib
     throw new Error("That backup contains a cover larger than Plot Pile supports.");
   }
 
-  return { books, series };
+  const seriesWithAuthors = series.map((item) => {
+    if (item.author) return item;
+    const linkedAuthors = [
+      ...new Set(
+        books
+          .filter((book) => book.seriesId === item.id && book.author)
+          .map((book) => book.author),
+      ),
+    ];
+    return { ...item, author: linkedAuthors.length === 1 ? linkedAuthors[0] : "" };
+  });
+
+  return { books, series: seriesWithAuthors };
 }

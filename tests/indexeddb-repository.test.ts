@@ -24,6 +24,15 @@ describe("IndexedDbLibraryRepository", () => {
     expect(await repository.read()).toEqual(snapshot);
   });
 
+  it("commits a series and a batch of books atomically", async () => {
+    const repository = new IndexedDbLibraryRepository();
+    const secondBook = { ...book, id: "book-2", title: "Book Two", seriesPosition: "2" };
+    await repository.saveSeriesWithBooks(series, [book, secondBook]);
+    const result = await repository.read();
+    expect(result.series).toEqual([series]);
+    expect(result.books).toEqual(expect.arrayContaining([book, secondBook]));
+  });
+
   it("rolls back the book when the companion series is invalid", async () => {
     const repository = new IndexedDbLibraryRepository();
     const invalidSeries = { ...series, id: undefined } as unknown as Series;
@@ -51,4 +60,3 @@ describe("IndexedDbLibraryRepository", () => {
     expect(await repository.read()).toEqual({ books: [], series: [] });
   });
 });
-

@@ -39,6 +39,7 @@ function mapLegacy(payload: LegacyPayload, now: string): LibrarySnapshot {
     id: item.id,
     name: cleanSeriesName(item.name),
     nameKey: seriesNameKey(item.name),
+    author: "",
     status: item.status === "complete" ? "complete" : "incomplete",
     nextReleaseTitle: "",
     nextReleaseDate: item.nextReleaseDate || "",
@@ -125,4 +126,3 @@ export async function migrateLegacyLibrary(input: {
   );
   return { importedBooks, localizedCovers, pendingCovers };
 }
-

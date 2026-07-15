@@ -56,8 +56,19 @@ export class IndexedDbLibraryRepository implements LibraryRepository {
       const completed = transactionDone(transaction);
       const booksRequest = transaction.objectStore(BOOKS_STORE).getAll() as IDBRequest<Book[]>;
       const seriesRequest = transaction.objectStore(SERIES_STORE).getAll() as IDBRequest<Series[]>;
-      const [books, series] = await Promise.all([requestValue(booksRequest), requestValue(seriesRequest)]);
+      const [books, storedSeries] = await Promise.all([requestValue(booksRequest), requestValue(seriesRequest)]);
       await completed;
+      const series = storedSeries.map((item) => {
+        if (item.author) return item;
+        const linkedAuthors = [
+          ...new Set(
+            books
+              .filter((book) => book.seriesId === item.id && book.author)
+              .map((book) => book.author),
+          ),
+        ];
+        return { ...item, author: linkedAuthors.length === 1 ? linkedAuthors[0] : "" };
+      });
       return { books, series };
     } finally {
       database.close();
@@ -84,6 +95,20 @@ export class IndexedDbLibraryRepository implements LibraryRepository {
       const transaction = database.transaction(SERIES_STORE, "readwrite");
       const completed = transactionDone(transaction);
       transaction.objectStore(SERIES_STORE).put(series);
+      await completed;
+    } finally {
+      database.close();
+    }
+  }
+
+  async saveSeriesWithBooks(series: Series, books: Book[]) {
+    const database = await openDatabase();
+    try {
+      const transaction = database.transaction([BOOKS_STORE, SERIES_STORE], "readwrite");
+      const completed = transactionDone(transaction);
+      transaction.objectStore(SERIES_STORE).put(series);
+      const bookStore = transaction.objectStore(BOOKS_STORE);
+      books.forEach((book) => bookStore.put(book));
       await completed;
     } finally {
       database.close();
@@ -179,4 +204,3 @@ export class IndexedDbLibraryRepository implements LibraryRepository {
     }
   }
 }
-

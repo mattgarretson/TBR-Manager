@@ -96,8 +96,8 @@ export function LibraryView({
         {([
           ["all", "All"],
           ["standalone", "Standalone"],
-          ["incomplete", "Incomplete series"],
-          ["complete", "Complete series"],
+          ["incomplete", "Ongoing series"],
+          ["complete", "Finished series"],
           ["upcoming", "Upcoming releases"],
         ] as [BookScope, string][]).map(([value, label]) => (
           <button className={scope === value ? "active" : ""} type="button" onClick={() => setScope(value)} aria-pressed={scope === value} key={value}>{label}</button>
@@ -167,4 +167,3 @@ export function LibraryView({
     </section>
   );
 }
-

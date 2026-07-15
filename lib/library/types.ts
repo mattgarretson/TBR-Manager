@@ -4,6 +4,7 @@ export type Series = {
   id: string;
   name: string;
   nameKey: string;
+  author: string;
   status: SeriesStatus;
   nextReleaseTitle: string;
   nextReleaseDate: string;
@@ -47,9 +48,15 @@ export type SeriesSort = "name" | "books" | "nextRelease" | "updatedAt";
 
 export type NewSeriesInput = {
   name: string;
+  author: string;
   status: SeriesStatus;
   nextReleaseTitle: string;
   nextReleaseDate: string;
+};
+
+export type SaveSeriesBookInput = {
+  title: string;
+  seriesPosition: string;
 };
 
 export type SaveBookInput = {
@@ -68,10 +75,12 @@ export type SaveBookInput = {
 export type SaveSeriesInput = {
   id?: string;
   name: string;
+  author: string;
   status: SeriesStatus;
   nextReleaseTitle: string;
   nextReleaseDate: string;
   notes: string;
+  books?: SaveSeriesBookInput[];
 };
 
 export type LegacySeries = {
@@ -93,4 +102,3 @@ export type LegacyBook = {
   createdAt: string;
   updatedAt: string;
 };
-

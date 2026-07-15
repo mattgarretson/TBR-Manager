@@ -5,7 +5,8 @@ Plot Pile is an offline-first, installable TBR organizer designed for phones.
 ## Product shape
 
 - Books with authors, covers, notes, unlimited normalized tags, and release dates
-- First-class series with complete/incomplete status, reading order, notes, and upcoming releases
+- First-class series with default authors, ongoing/finished publishing status, reading order, notes, and upcoming releases
+- Batch series creation for numbered runs or pasted individual titles, with an editable preview
 - Library and series search, filters, and ascending/descending sorts
 - IndexedDB as the on-device source of truth
 - JSON backup and restore, including uploaded cover data
@@ -31,4 +32,4 @@ npm run dev
 npm run check
 ```
 
-`npm run check` performs type checking, linting, 35 domain/storage/UI/PWA tests, and a production build.
+`npm run check` performs type checking, linting, domain/storage/UI/PWA tests, and a production build.

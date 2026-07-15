@@ -31,6 +31,17 @@ export class MemoryLibraryRepository implements LibraryRepository {
     this.snapshot.series.push(clone(series));
   }
 
+  async saveSeriesWithBooks(series: Series, books: Book[]) {
+    const next = clone(this.snapshot);
+    next.series = next.series.filter((item) => item.id !== series.id);
+    next.series.push(clone(series));
+    for (const book of books) {
+      next.books = next.books.filter((item) => item.id !== book.id);
+      next.books.push(clone(book));
+    }
+    this.snapshot = next;
+  }
+
   async deleteBook(id: string) {
     this.snapshot.books = this.snapshot.books.filter((item) => item.id !== id);
   }
@@ -59,4 +70,3 @@ export class MemoryLibraryRepository implements LibraryRepository {
     this.metadata.set(key, value);
   }
 }
-
