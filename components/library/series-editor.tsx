@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type KeyboardEvent } from "react";
+import { normalizeTags } from "../../lib/library/model";
 import type {
   SaveSeriesBookInput,
   SaveSeriesInput,
@@ -65,6 +66,7 @@ export function SeriesEditor({
   const [draft, setDraft] = useState(() => ({
     name: series?.name ?? "",
     author: series?.author ?? "",
+    tags: series?.tags ?? [],
     status: series?.status ?? "incomplete" as SeriesStatus,
     nextReleaseTitle: series?.nextReleaseTitle ?? "",
     nextReleaseDate: series?.nextReleaseDate ?? "",
@@ -76,6 +78,7 @@ export function SeriesEditor({
   const [bookCount, setBookCount] = useState("3");
   const [titleList, setTitleList] = useState("");
   const [batchRows, setBatchRows] = useState<BatchRow[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [dirty, setDirty] = useState(false);
 
   function update(patch: Partial<typeof draft>) {
@@ -88,6 +91,20 @@ export function SeriesEditor({
     setBatchRows([]);
     setDirty(true);
     clearError();
+  }
+
+  function addTags(value: string) {
+    const incoming = normalizeTags(value.split(","));
+    if (!incoming.length) return;
+    update({ tags: normalizeTags([...draft.tags, ...incoming]) });
+    setTagInput("");
+  }
+
+  function handleTagKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter" || event.key === ",") {
+      event.preventDefault();
+      addTags(tagInput);
+    }
   }
 
   function invalidatePreview(action: () => void) {
@@ -133,6 +150,7 @@ export function SeriesEditor({
       await onSave({
         id: series?.id,
         ...draft,
+        tags: normalizeTags([...draft.tags, ...tagInput.split(",")]),
         books: books.map(({ title, seriesPosition }) => ({ title, seriesPosition })),
       });
       setDirty(false);
@@ -152,6 +170,7 @@ export function SeriesEditor({
           <label className="form-field"><span>Series author</span><input value={draft.author} onChange={(event) => update({ author: event.target.value })} placeholder="Used for new books" /></label>
         </div>
         <p className="field-hint series-author-hint">New books inherit this author. You can still change an individual book when needed.</p>
+        <div className="form-field"><div className="label-row"><span>Series tags</span><small>Inherited by every linked book</small></div><div className="tag-entry">{draft.tags.map((tag) => <button type="button" onClick={() => update({ tags: draft.tags.filter((item) => item !== tag) })} aria-label={`Remove ${tag}`} key={tag}>{tag} <span>×</span></button>)}<input aria-label="Add series tags" value={tagInput} onChange={(event) => { setTagInput(event.target.value); setDirty(true); }} onKeyDown={handleTagKeyDown} onBlur={() => addTags(tagInput)} placeholder={draft.tags.length ? "Add another…" : "fantasy, progression…"} /></div><small className="field-hint">Add a tag once here and it appears on every book in the series.</small></div>
         <label className="form-field"><span>Publishing status</span><select value={draft.status} onChange={(event) => update({ status: event.target.value as SeriesStatus, nextReleaseTitle: event.target.value === "complete" ? "" : draft.nextReleaseTitle, nextReleaseDate: event.target.value === "complete" ? "" : draft.nextReleaseDate })}><option value="incomplete">Ongoing</option><option value="complete">Finished publishing</option></select></label>
         {draft.status === "incomplete" && <div className="field-row"><label className="form-field"><span>Next book title <small>Optional</small></span><input value={draft.nextReleaseTitle} onChange={(event) => update({ nextReleaseTitle: event.target.value })} /></label><label className="form-field"><span>Next release date <small>Optional</small></span><input type="date" value={draft.nextReleaseDate} onChange={(event) => update({ nextReleaseDate: event.target.value })} /></label></div>}
 

@@ -20,7 +20,7 @@ describe("LibraryService", () => {
       seriesId: null,
       seriesPosition: "1",
       releaseDate: "",
-      newSeries: { name: " Saga ", author: " Writer ", status: "incomplete", nextReleaseTitle: "Next", nextReleaseDate: "2028-01-01" },
+      newSeries: { name: " Saga ", author: " Writer ", tags: [], status: "incomplete", nextReleaseTitle: "Next", nextReleaseDate: "2028-01-01" },
     });
     expect(result.created).toBe(true);
     expect(result.snapshot.series[0]).toMatchObject({ id: "series-new", name: "Saga", author: "Writer" });
@@ -30,7 +30,7 @@ describe("LibraryService", () => {
   it("rejects duplicate series and preserves backup compatibility", async () => {
     const repository = new MemoryLibraryRepository(snapshot);
     const service = new LibraryService(repository, { now: () => new Date(timestamp), createId: () => "new" });
-    await expect(service.saveSeries({ name: series.name.toUpperCase(), author: series.author, status: "complete", nextReleaseTitle: "", nextReleaseDate: "", notes: "" }))
+    await expect(service.saveSeries({ name: series.name.toUpperCase(), author: series.author, tags: series.tags, status: "complete", nextReleaseTitle: "", nextReleaseDate: "", notes: "" }))
       .rejects.toThrow("already exists");
     const backup = service.createBackup(snapshot);
     await repository.replace({ books: [], series: [] });
@@ -47,6 +47,7 @@ describe("LibraryService", () => {
     const result = await service.saveSeries({
       name: "Cradle",
       author: "Will Wight",
+      tags: ["Progression", "fantasy", "progression"],
       status: "complete",
       nextReleaseTitle: "",
       nextReleaseDate: "",
@@ -57,7 +58,7 @@ describe("LibraryService", () => {
       ],
     });
     expect(result).toMatchObject({ created: true, booksCreated: 2 });
-    expect(repository.snapshot.series[0]).toMatchObject({ id: "series-new", author: "Will Wight" });
+    expect(repository.snapshot.series[0]).toMatchObject({ id: "series-new", author: "Will Wight", tags: ["progression", "fantasy"] });
     expect(repository.snapshot.books).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: "book-1", title: "Unsouled", author: "Will Wight", seriesId: "series-new", seriesPosition: "1" }),
       expect.objectContaining({ id: "book-2", title: "Soulsmith", author: "Will Wight", seriesId: "series-new", seriesPosition: "2" }),
@@ -71,8 +72,16 @@ describe("LibraryService", () => {
     expect(repository.snapshot.books[0].title).toBe("Updated");
     await service.deleteSeries(series.id);
     expect(repository.snapshot.books[0].seriesId).toBeNull();
+    expect(repository.snapshot.books[0].tags).toEqual(["slow burn", "fantasy"]);
     await service.deleteBook(book.id);
     expect(repository.snapshot.books).toEqual([]);
+  });
+
+  it("preserves inherited tags when a book leaves its series", async () => {
+    const repository = new MemoryLibraryRepository(snapshot);
+    const service = new LibraryService(repository, { now: () => new Date(timestamp) });
+    await service.saveBook({ ...book, seriesId: null });
+    expect(repository.snapshot.books[0]).toMatchObject({ seriesId: null, tags: ["slow burn", "fantasy"] });
   });
 
   it("rejects impossible calendar dates before persistence", async () => {

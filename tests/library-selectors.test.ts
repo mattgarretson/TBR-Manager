@@ -20,7 +20,11 @@ const standalone = {
 
 describe("library selectors", () => {
   it("counts and orders tags", () => {
-    expect(selectTagCounts([book, standalone])).toEqual([["slow burn", 2], ["found family", 1]]);
+    expect(selectTagCounts([book, standalone], [series])).toEqual([
+      ["slow burn", 2],
+      ["fantasy", 1],
+      ["found family", 1],
+    ]);
   });
 
   it.each([
@@ -52,6 +56,10 @@ describe("library selectors", () => {
     };
     expect(selectVisibleBooks({ ...input, query: "night court", direction: "asc" }).map((item) => item.id))
       .toEqual([book.id]);
+    expect(selectVisibleBooks({ ...input, query: "fantasy", direction: "asc" }).map((item) => item.id))
+      .toEqual([book.id]);
+    expect(selectVisibleBooks({ ...input, query: "", activeTag: "fantasy", direction: "asc" }).map((item) => item.id))
+      .toEqual([book.id]);
     expect(selectVisibleBooks({ ...input, query: "", direction: "desc" }).map((item) => item.id))
       .toEqual([standalone.id, book.id]);
   });
@@ -63,6 +71,8 @@ describe("library selectors", () => {
     expect(selectSeriesCards({ cards, query: "Book One", scope: "all", sort: "name", direction: "asc" }))
       .toHaveLength(1);
     expect(selectSeriesCards({ cards, query: "A. Writer", scope: "all", sort: "name", direction: "asc" }))
+      .toHaveLength(2);
+    expect(selectSeriesCards({ cards, query: "fantasy", scope: "all", sort: "name", direction: "asc" }))
       .toHaveLength(2);
     expect(selectSeriesCards({ cards, query: "", scope: "complete", sort: "name", direction: "asc" })[0].item.id)
       .toBe(complete.id);

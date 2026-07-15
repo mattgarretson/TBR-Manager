@@ -5,6 +5,7 @@ export type Series = {
   name: string;
   nameKey: string;
   author: string;
+  tags: string[];
   status: SeriesStatus;
   nextReleaseTitle: string;
   nextReleaseDate: string;
@@ -49,6 +50,7 @@ export type SeriesSort = "name" | "books" | "nextRelease" | "updatedAt";
 export type NewSeriesInput = {
   name: string;
   author: string;
+  tags: string[];
   status: SeriesStatus;
   nextReleaseTitle: string;
   nextReleaseDate: string;
@@ -76,6 +78,7 @@ export type SaveSeriesInput = {
   id?: string;
   name: string;
   author: string;
+  tags: string[];
   status: SeriesStatus;
   nextReleaseTitle: string;
   nextReleaseDate: string;

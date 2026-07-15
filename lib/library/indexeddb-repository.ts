@@ -1,5 +1,6 @@
 import type { LibraryRepository } from "./repository";
 import type { Book, LibrarySnapshot, Series } from "./types";
+import { normalizeTags } from "./model";
 
 export const DATABASE_NAME = "plot-pile-library";
 export const DATABASE_VERSION = 1;
@@ -59,7 +60,6 @@ export class IndexedDbLibraryRepository implements LibraryRepository {
       const [books, storedSeries] = await Promise.all([requestValue(booksRequest), requestValue(seriesRequest)]);
       await completed;
       const series = storedSeries.map((item) => {
-        if (item.author) return item;
         const linkedAuthors = [
           ...new Set(
             books
@@ -67,7 +67,11 @@ export class IndexedDbLibraryRepository implements LibraryRepository {
               .map((book) => book.author),
           ),
         ];
-        return { ...item, author: linkedAuthors.length === 1 ? linkedAuthors[0] : "" };
+        return {
+          ...item,
+          author: item.author || (linkedAuthors.length === 1 ? linkedAuthors[0] : ""),
+          tags: normalizeTags(item.tags),
+        };
       });
       return { books, series };
     } finally {
@@ -133,12 +137,23 @@ export class IndexedDbLibraryRepository implements LibraryRepository {
       const transaction = database.transaction([BOOKS_STORE, SERIES_STORE], "readwrite");
       const completed = transactionDone(transaction);
       const bookStore = transaction.objectStore(BOOKS_STORE);
+      const seriesStore = transaction.objectStore(SERIES_STORE);
       const linkedRequest = bookStore.index("seriesId").getAll(id) as IDBRequest<Book[]>;
-      const linkedBooks = await requestValue(linkedRequest);
+      const seriesRequest = seriesStore.get(id) as IDBRequest<Series | undefined>;
+      const [linkedBooks, removedSeries] = await Promise.all([
+        requestValue(linkedRequest),
+        requestValue(seriesRequest),
+      ]);
       linkedBooks.forEach((book) =>
-        bookStore.put({ ...book, seriesId: null, seriesPosition: "", updatedAt }),
+        bookStore.put({
+          ...book,
+          tags: normalizeTags([...book.tags, ...(removedSeries?.tags ?? [])]),
+          seriesId: null,
+          seriesPosition: "",
+          updatedAt,
+        }),
       );
-      transaction.objectStore(SERIES_STORE).delete(id);
+      seriesStore.delete(id);
       await completed;
     } finally {
       database.close();

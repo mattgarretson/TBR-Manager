@@ -72,6 +72,7 @@ export function SeriesView({
                 <button className="text-action" type="button" onClick={() => onEditSeries(item)}>Edit series</button>
               </div>
               {next && <div className="release-callout"><span>Next release</span><strong>{next.title}</strong><time dateTime={next.date}>{formatDate(next.date)}</time></div>}
+              {item.tags.length > 0 && <div className="series-tags" aria-label="Series tags">{item.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}
               {item.notes && <p className="series-notes">{item.notes}</p>}
               {linkedBooks.length ? (
                 <ol className="series-books">
@@ -86,7 +87,7 @@ export function SeriesView({
                   ))}
                 </ol>
               ) : <p className="empty-series">No books linked yet.</p>}
-              <button className="add-to-series" type="button" onClick={() => onAddBook(item.id)} aria-label={linkedBooks.length ? "Add next book" : "Add first book"}>＋ {linkedBooks.length ? "Add next book" : "Add first book"}</button>
+              {item.status === "incomplete" && <button className="add-to-series" type="button" onClick={() => onAddBook(item.id)} aria-label={linkedBooks.length ? "Add next book" : "Add first book"}>＋ {linkedBooks.length ? "Add next book" : "Add first book"}</button>}
             </article>
           ))}
         </div>

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createBackup,
   currentLocalDate,
+  effectiveBookTags,
   isCalendarDate,
   nextSeriesRelease,
   nextSeriesPosition,
@@ -24,6 +25,11 @@ describe("library domain model", () => {
   it("uses a stable case-insensitive series key", () => {
     expect(seriesNameKey("  The   Night Court  ")).toBe("the night court");
     expect(seriesNameKey("THE NIGHT COURT")).toBe("the night court");
+  });
+
+  it("combines book-specific and inherited series tags without duplicates", () => {
+    expect(effectiveBookTags(book, series)).toEqual(["slow burn", "fantasy"]);
+    expect(effectiveBookTags({ ...book, tags: ["fantasy"] }, series)).toEqual(["fantasy"]);
   });
 
   it("sorts constituent books by numeric-friendly series order", () => {
@@ -60,7 +66,10 @@ describe("library domain model", () => {
 
   it("round-trips the version-one backup contract", () => {
     expect(parseBackup(createBackup(snapshot.books, snapshot.series, timestamp), timestamp)).toEqual(snapshot);
-    expect(parseBackup(backupV1, timestamp)).toEqual(snapshot);
+    expect(parseBackup(backupV1, timestamp)).toEqual({
+      ...snapshot,
+      series: [{ ...series, tags: [] }],
+    });
   });
 
   it("rejects duplicates and invalid calendar dates while unlinking orphaned books", () => {

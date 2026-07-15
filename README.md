@@ -5,8 +5,9 @@ Plot Pile is an offline-first, installable TBR organizer designed for phones.
 ## Product shape
 
 - Books with authors, covers, notes, unlimited normalized tags, and release dates
-- First-class series with default authors, ongoing/finished publishing status, reading order, notes, and upcoming releases
+- First-class series with default authors, inherited tags, ongoing/finished publishing status, reading order, notes, and upcoming releases
 - Batch series creation for numbered runs or pasted individual titles, with an editable preview
+- Completed series omit the add-next-book shortcut so finished reading orders stay settled
 - Library and series search, filters, and ascending/descending sorts
 - IndexedDB as the on-device source of truth
 - JSON backup and restore, including uploaded cover data

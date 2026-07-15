@@ -17,7 +17,8 @@ Plot Pile is a single-user, device-local application. IndexedDB is the authorita
 - Creating a new series from the book editor writes the series and book in one IndexedDB transaction.
 - Creating a series with a batch of books writes the series and every generated book in one IndexedDB transaction.
 - A series author is a default copied onto new books; each book keeps its own author so exceptions and later unlinking remain safe.
-- Deleting a series and unlinking its books is one transaction.
+- Series tags are inherited at read time by every linked book and participate in book search, filters, and tag counts. Book-specific tags remain independently editable.
+- Deleting a series and unlinking its books is one transaction; inherited series tags are copied to the unlinked books so their classification is not lost.
 - Release dates are empty or valid `YYYY-MM-DD` calendar dates.
 - Backup version 1 remains readable and writable. Older backups without a series author infer it when every linked book has the same author. Duplicate IDs/name keys and impossible dates are rejected before replacing the current library.
 - Hosted R2 cover URLs are not considered migrated until their bytes have been copied into the local `coverImage` representation.

@@ -83,6 +83,11 @@ export function BookEditor({
   const [draft, setDraft] = useState(() => initialDraft(book, preselectedSeriesId ?? "", series, books));
   const [tagInput, setTagInput] = useState("");
   const [dirty, setDirty] = useState(false);
+  const selectedSeries = draft.seriesId && draft.seriesId !== NEW_SERIES_VALUE
+    ? series.find((item) => item.id === draft.seriesId)
+    : undefined;
+  const inheritedTags = selectedSeries?.tags ?? [];
+  const bookSpecificTags = draft.tags.filter((tag) => !inheritedTags.includes(tag));
 
   function updateDraft(patch: Partial<BookDraft>) {
     setDraft((current) => ({ ...current, ...patch }));
@@ -97,7 +102,7 @@ export function BookEditor({
   }
 
   function addTags(value: string) {
-    const incoming = normalizeTags(value.split(","));
+    const incoming = normalizeTags(value.split(",")).filter((tag) => !inheritedTags.includes(tag));
     if (!incoming.length) return;
     updateDraft({ tags: normalizeTags([...draft.tags, ...incoming]) });
     setTagInput("");
@@ -159,6 +164,7 @@ export function BookEditor({
       newSeries: draft.seriesId === NEW_SERIES_VALUE ? {
         name: draft.newSeriesName,
         author: draft.author,
+        tags: [],
         status: draft.newSeriesStatus,
         nextReleaseTitle: draft.newSeriesNextTitle,
         nextReleaseDate: draft.newSeriesNextDate,
@@ -225,7 +231,8 @@ export function BookEditor({
               <div><strong>Cover is optional</strong><p>Upload one for offline use, or paste an image address. Pasted addresses may not work offline.</p><input className="standard-input" type="url" value={draft.coverImage.startsWith("data:") ? "" : draft.coverImage} disabled={draft.coverImage.startsWith("data:")} onChange={(event) => updateDraft({ coverImage: event.target.value })} placeholder="https://…" />{draft.coverImage && <button className="danger-link" type="button" onClick={() => updateDraft({ coverImage: "" })}>Remove cover</button>}</div>
             </div>
             <label className="form-field"><span>Why did you want to read it? <small>Optional</small></span><textarea value={draft.reason} onChange={(event) => updateDraft({ reason: event.target.value })} rows={4} placeholder="What sold you on it?" /></label>
-            <div className="form-field"><div className="label-row"><span>Tropes & tags</span><small>No limit</small></div><div className="tag-entry">{draft.tags.map((tag) => <button type="button" onClick={() => updateDraft({ tags: draft.tags.filter((item) => item !== tag) })} aria-label={`Remove ${tag}`} key={tag}>{tag} <span>×</span></button>)}<input value={tagInput} onChange={(event) => { setTagInput(event.target.value); setDirty(true); }} onKeyDown={handleTagKeyDown} onBlur={() => addTags(tagInput)} placeholder={draft.tags.length ? "Add another…" : "slow burn, found family…"} /></div><small className="field-hint">Press enter or use commas between tags.</small></div>
+            {inheritedTags.length > 0 && <div className="inherited-series-tags"><small>From {selectedSeries?.name}</small><div>{inheritedTags.map((tag) => <span key={tag}>{tag}</span>)}</div></div>}
+            <div className="form-field"><div className="label-row"><span>Book-specific tags</span><small>No limit</small></div><div className="tag-entry">{bookSpecificTags.map((tag) => <button type="button" onClick={() => updateDraft({ tags: draft.tags.filter((item) => item !== tag) })} aria-label={`Remove ${tag}`} key={tag}>{tag} <span>×</span></button>)}<input aria-label="Add book-specific tags" value={tagInput} onChange={(event) => { setTagInput(event.target.value); setDirty(true); }} onKeyDown={handleTagKeyDown} onBlur={() => addTags(tagInput)} placeholder={bookSpecificTags.length ? "Add another…" : "slow burn, found family…"} /></div><small className="field-hint">These apply only to this book. Series tags appear above automatically.</small></div>
           </div>
         </details>
 

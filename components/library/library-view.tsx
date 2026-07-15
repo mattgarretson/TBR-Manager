@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { currentLocalDate } from "../../lib/library/model";
+import { currentLocalDate, effectiveBookTags } from "../../lib/library/model";
 import { selectTagCounts, selectVisibleBooks } from "../../lib/library/selectors";
 import type {
   Book,
@@ -35,7 +35,7 @@ export function LibraryView({
   const [sort, setSort] = useState<BookSort>("createdAt");
   const [direction, setDirection] = useState<SortDirection>("desc");
   const seriesMap = useMemo(() => new Map(series.map((item) => [item.id, item])), [series]);
-  const allTags = useMemo(() => selectTagCounts(books), [books]);
+  const allTags = useMemo(() => selectTagCounts(books, series), [books, series]);
   const visibleBooks = useMemo(
     () => selectVisibleBooks({
       books,
@@ -119,6 +119,7 @@ export function LibraryView({
         <div className="card-grid">
           {visibleBooks.map((book) => {
             const linkedSeries = book.seriesId ? seriesMap.get(book.seriesId) : undefined;
+            const visibleTags = effectiveBookTags(book, linkedSeries);
             return (
               <article className="book-card" key={book.id}>
                 <div className={`cover cover-tone-${coverTone(book.id)}`}>
@@ -143,9 +144,9 @@ export function LibraryView({
                     {linkedSeries && <span className={`status-badge ${linkedSeries.status}`}>{linkedSeries.status === "complete" ? "Complete" : "Incomplete"}</span>}
                     {book.releaseDate && <time dateTime={book.releaseDate}>{book.releaseDate >= currentLocalDate() ? "Releases" : "Released"} {formatDate(book.releaseDate)}</time>}
                   </div>
-                  {book.tags.length > 0 && (
+                  {visibleTags.length > 0 && (
                     <div className="book-tags" aria-label="Tropes and tags">
-                      {book.tags.map((tag) => <button className={activeTag === tag ? "active" : ""} type="button" onClick={() => setActiveTag((current) => current === tag ? "All" : tag)} aria-pressed={activeTag === tag} key={tag}>{tag}</button>)}
+                      {visibleTags.map((tag) => <button className={`${activeTag === tag ? "active" : ""}${linkedSeries?.tags.includes(tag) ? " inherited" : ""}`} title={linkedSeries?.tags.includes(tag) ? `Inherited from ${linkedSeries.name}` : undefined} type="button" onClick={() => setActiveTag((current) => current === tag ? "All" : tag)} aria-pressed={activeTag === tag} key={tag}>{tag}</button>)}
                     </div>
                   )}
                   {book.reason && <div className="reason-note"><small>Why it made the list</small><p>{book.reason}</p></div>}

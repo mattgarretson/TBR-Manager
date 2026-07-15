@@ -1,4 +1,4 @@
-import { nextSeriesRelease, sortSeriesBooks } from "./model";
+import { effectiveBookTags, nextSeriesRelease, sortSeriesBooks } from "./model";
 import type {
   Book,
   BookScope,
@@ -26,9 +26,11 @@ function compareOptional(left: string, right: string, direction: SortDirection) 
   return compareText(left, right, direction);
 }
 
-export function selectTagCounts(books: readonly Book[]): [string, number][] {
+export function selectTagCounts(books: readonly Book[], series: readonly Series[]): [string, number][] {
   const counts = new Map<string, number>();
-  books.forEach((book) => book.tags.forEach((tag) => counts.set(tag, (counts.get(tag) ?? 0) + 1)));
+  const seriesMap = new Map(series.map((item) => [item.id, item]));
+  books.forEach((book) => effectiveBookTags(book, book.seriesId ? seriesMap.get(book.seriesId) : undefined)
+    .forEach((tag) => counts.set(tag, (counts.get(tag) ?? 0) + 1)));
   return [...counts.entries()].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]));
 }
 
@@ -48,16 +50,17 @@ export function selectVisibleBooks(input: {
   return books
     .filter((book) => {
       const linkedSeries = book.seriesId ? seriesMap.get(book.seriesId) : undefined;
+      const tags = effectiveBookTags(book, linkedSeries);
       const scopeMatches =
         scope === "all" ||
         (scope === "standalone" && !linkedSeries) ||
         (scope === "complete" && linkedSeries?.status === "complete") ||
         (scope === "incomplete" && linkedSeries?.status === "incomplete") ||
         (scope === "upcoming" && Boolean(book.releaseDate && book.releaseDate >= today));
-      const tagMatches = activeTag === "All" || book.tags.includes(activeTag);
+      const tagMatches = activeTag === "All" || tags.includes(activeTag);
       const searchMatches =
         !needle ||
-        [book.title, book.author, book.reason, linkedSeries?.name ?? "", book.seriesPosition, ...book.tags]
+        [book.title, book.author, book.reason, linkedSeries?.name ?? "", book.seriesPosition, ...tags]
           .join(" ")
           .toLocaleLowerCase("en-US")
           .includes(needle);
@@ -107,7 +110,7 @@ export function selectSeriesCards(input: {
       const scopeMatches = scope === "all" || item.status === scope || (scope === "upcoming" && Boolean(next));
       const searchMatches =
         !needle ||
-        [item.name, item.author, item.notes, ...books.flatMap((book) => [book.title, book.author])]
+        [item.name, item.author, item.notes, ...item.tags, ...books.flatMap((book) => [book.title, book.author])]
           .join(" ")
           .toLocaleLowerCase("en-US")
           .includes(needle);

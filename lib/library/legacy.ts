@@ -40,6 +40,7 @@ function mapLegacy(payload: LegacyPayload, now: string): LibrarySnapshot {
     name: cleanSeriesName(item.name),
     nameKey: seriesNameKey(item.name),
     author: "",
+    tags: [],
     status: item.status === "complete" ? "complete" : "incomplete",
     nextReleaseTitle: "",
     nextReleaseDate: item.nextReleaseDate || "",

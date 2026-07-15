@@ -1,5 +1,6 @@
 import type { LibraryRepository } from "../../lib/library/repository";
 import type { Book, LibrarySnapshot, Series } from "../../lib/library/types";
+import { normalizeTags } from "../../lib/library/model";
 
 function clone<T>(value: T): T {
   return structuredClone(value);
@@ -47,9 +48,16 @@ export class MemoryLibraryRepository implements LibraryRepository {
   }
 
   async deleteSeries(id: string, updatedAt: string) {
+    const removedSeries = this.snapshot.series.find((item) => item.id === id);
     this.snapshot.series = this.snapshot.series.filter((item) => item.id !== id);
     this.snapshot.books = this.snapshot.books.map((book) =>
-      book.seriesId === id ? { ...book, seriesId: null, seriesPosition: "", updatedAt } : book,
+      book.seriesId === id ? {
+        ...book,
+        tags: normalizeTags([...book.tags, ...(removedSeries?.tags ?? [])]),
+        seriesId: null,
+        seriesPosition: "",
+        updatedAt,
+      } : book,
     );
   }
 

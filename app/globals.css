@@ -451,6 +451,10 @@ h1,
   cursor: pointer;
 }
 
+.book-tags button.inherited {
+  border-style: dashed;
+}
+
 .filter-row button {
   min-height: 36px;
   padding: 0 12px;
@@ -760,6 +764,24 @@ h1,
 .release-callout time { color: #6a5541; font-size: 0.66rem; font-weight: 760; }
 
 .series-notes { margin: 14px 2px 0; color: #564740; font-size: 0.72rem; line-height: 1.55; white-space: pre-wrap; }
+
+.series-tags {
+  margin-top: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.series-tags span,
+.inherited-series-tags span {
+  padding: 5px 8px;
+  border: 1px dashed var(--tag-border);
+  border-radius: 999px;
+  background: var(--tag-bg);
+  color: var(--tag-text);
+  font-size: 0.58rem;
+  font-weight: 760;
+}
 
 .series-books {
   margin: 16px 0 0;
@@ -1089,6 +1111,28 @@ h1,
 
 .tag-entry input { flex: 1 1 155px; min-width: 95px; height: 32px; padding: 0 5px; border: 0; outline: 0; background: transparent; font-size: 0.72rem; }
 .field-hint { display: block; margin-top: 6px; }
+
+.inherited-series-tags {
+  margin-bottom: 14px;
+  padding: 10px;
+  border: 1px dashed var(--tag-border);
+  border-radius: 10px;
+  background: var(--tag-bg);
+}
+
+.inherited-series-tags > small {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 0.57rem;
+  font-weight: 780;
+}
+
+.inherited-series-tags > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
 
 .form-error {
   margin: 12px 0 0;

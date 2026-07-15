@@ -7,6 +7,7 @@ export const series: Series = {
   name: "The Night Court",
   nameKey: "the night court",
   author: "A. Writer",
+  tags: ["fantasy"],
   status: "incomplete",
   nextReleaseTitle: "The Last Door",
   nextReleaseDate: "2027-09-01",

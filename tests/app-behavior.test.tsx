@@ -43,6 +43,30 @@ describe("Plot Pile behavior", () => {
     expect(tagButtons[0].getAttribute("aria-pressed")).toBe("false");
   });
 
+  it("shows inherited series tags on books and filters by them", async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await screen.findByText("Book One");
+    const tagButtons = screen.getAllByRole("button", { name: /fantasy/i });
+    expect(tagButtons).toHaveLength(2);
+    await user.click(tagButtons[0]);
+    expect(screen.getByText("Book One")).toBeTruthy();
+    expect(tagButtons[0].getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("adds a series tag once and exposes it on every linked book", async () => {
+    const user = userEvent.setup();
+    const { repository } = renderApp();
+    await screen.findByText("Book One");
+    await user.click(screen.getByRole("button", { name: "Series" }));
+    await user.click(screen.getByRole("button", { name: "Edit series" }));
+    await user.type(screen.getByRole("textbox", { name: "Add series tags" }), "progression{enter}");
+    await user.click(screen.getByRole("button", { name: "Save series" }));
+    await waitFor(() => expect(repository.snapshot.series[0].tags).toEqual(["fantasy", "progression"]));
+    await user.click(screen.getByRole("button", { name: "Library" }));
+    await waitFor(() => expect(screen.getAllByRole("button", { name: /progression/i })).toHaveLength(2));
+  });
+
   it("edits a book through the controller and validates required fields", async () => {
     const user = userEvent.setup();
     const { repository } = renderApp();
@@ -134,5 +158,16 @@ describe("Plot Pile behavior", () => {
     expect((screen.getByRole("textbox", { name: "Book title" }) as HTMLInputElement).value).toBe("");
     expect((screen.getByRole("textbox", { name: "Author" }) as HTMLInputElement).value).toBe("A. Writer");
     expect((screen.getByRole("textbox", { name: "Position in series" }) as HTMLInputElement).value).toBe("3");
+  });
+
+  it("does not offer another book for a completed series", async () => {
+    const user = userEvent.setup();
+    renderApp({
+      ...snapshot,
+      series: snapshot.series.map((item) => ({ ...item, status: "complete" as const })),
+    });
+    await screen.findByText("Book One");
+    await user.click(screen.getByRole("button", { name: "Series" }));
+    expect(screen.queryByRole("button", { name: "Add next book" })).toBeNull();
   });
 });

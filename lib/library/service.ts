@@ -60,6 +60,7 @@ export class LibraryService {
         name,
         nameKey,
         author: input.newSeries.author.trim() || author,
+        tags: normalizeTags(input.newSeries.tags),
         status: input.newSeries.status,
         nextReleaseTitle: input.newSeries.status === "incomplete" ? input.newSeries.nextReleaseTitle.trim() : "",
         nextReleaseDate: input.newSeries.status === "incomplete" ? input.newSeries.nextReleaseDate : "",
@@ -70,12 +71,17 @@ export class LibraryService {
       seriesId = seriesToCreate.id;
     }
 
+    let tags = normalizeTags(input.tags);
+    if (existing?.seriesId && existing.seriesId !== seriesId) {
+      const previousSeries = snapshot.series.find((item) => item.id === existing.seriesId);
+      tags = normalizeTags([...tags, ...(previousSeries?.tags ?? [])]);
+    }
     const book: Book = {
       id: existing?.id ?? this.createId(),
       title,
       author,
       reason: input.reason.trim(),
-      tags: normalizeTags(input.tags),
+      tags,
       coverImage: input.coverImage.trim(),
       seriesId: seriesId || null,
       seriesPosition: seriesId ? input.seriesPosition.trim() : "",
@@ -112,6 +118,7 @@ export class LibraryService {
       name,
       nameKey,
       author,
+      tags: normalizeTags(input.tags),
       status: input.status,
       nextReleaseTitle: input.status === "incomplete" ? input.nextReleaseTitle.trim() : "",
       nextReleaseDate: input.status === "incomplete" ? input.nextReleaseDate : "",

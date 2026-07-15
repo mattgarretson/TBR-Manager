@@ -47,6 +47,7 @@ describe("IndexedDbLibraryRepository", () => {
     const result = await repository.read();
     expect(result.series).toEqual([]);
     expect(result.books[0]).toMatchObject({ seriesId: null, seriesPosition: "", updatedAt: "2028-01-01T00:00:00.000Z" });
+    expect(result.books[0].tags).toEqual(["slow burn", "fantasy"]);
   });
 
   it("replaces, idempotently merges, and stores metadata", async () => {

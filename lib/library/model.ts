@@ -67,6 +67,10 @@ export function nextSeriesPosition(books: readonly Book[], seriesId: string): st
   return String(linkedBooks.length + 1);
 }
 
+export function effectiveBookTags(book: Book, series?: Series): string[] {
+  return normalizeTags([...book.tags, ...(series?.tags ?? [])]);
+}
+
 export function nextSeriesRelease(
   series: Series,
   books: readonly Book[],
@@ -147,6 +151,7 @@ export function parseBackup(value: unknown, now = new Date().toISOString()): Lib
       name,
       nameKey,
       author: requiredText(item.author).trim(),
+      tags: normalizeTags(item.tags),
       status,
       nextReleaseTitle: status === "complete" ? "" : requiredText(item.nextReleaseTitle),
       nextReleaseDate: status === "complete" ? "" : validateOptionalDate(requiredText(item.nextReleaseDate), "series release date"),
