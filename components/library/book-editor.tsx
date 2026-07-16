@@ -15,6 +15,7 @@ import type {
   SeriesStatus,
 } from "../../lib/library/types";
 import { DialogShell } from "./dialog-shell";
+import { CoverSearch, type CoverSearchClient } from "./cover-search";
 import { coverTone, readImage } from "./view-utils";
 
 const NEW_SERIES_VALUE = "__new_series__";
@@ -66,6 +67,7 @@ export function BookEditor({
   error,
   setError,
   clearError,
+  coverClient,
   onSave,
   onClose,
 }: {
@@ -77,6 +79,7 @@ export function BookEditor({
   error: string;
   setError: (message: string) => void;
   clearError: () => void;
+  coverClient?: CoverSearchClient;
   onSave: (input: SaveBookInput) => Promise<{ snapshot: LibrarySnapshot }>;
   onClose: () => void;
 }) {
@@ -228,7 +231,15 @@ export function BookEditor({
                 ) : <span><b>＋</b>Add cover</span>}
                 <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => void chooseCover(event)} />
               </label>
-              <div><strong>Cover is optional</strong><p>Upload one for offline use, or paste an image address. Pasted addresses may not work offline.</p><input className="standard-input" type="url" value={draft.coverImage.startsWith("data:") ? "" : draft.coverImage} disabled={draft.coverImage.startsWith("data:")} onChange={(event) => updateDraft({ coverImage: event.target.value })} placeholder="https://…" />{draft.coverImage && <button className="danger-link" type="button" onClick={() => updateDraft({ coverImage: "" })}>Remove cover</button>}</div>
+              <div><strong>Cover is optional</strong><p>Upload one, find one online for offline use, or paste an image address. Pasted addresses may not work offline.</p><input className="standard-input" type="url" value={draft.coverImage.startsWith("data:") ? "" : draft.coverImage} disabled={draft.coverImage.startsWith("data:")} onChange={(event) => updateDraft({ coverImage: event.target.value })} placeholder="https://…" />{draft.coverImage && <button className="danger-link" type="button" onClick={() => updateDraft({ coverImage: "" })}>Remove cover</button>}</div>
+              <CoverSearch
+                title={draft.title}
+                author={draft.author}
+                client={coverClient}
+                setError={setError}
+                clearError={clearError}
+                onPick={(dataUrl) => updateDraft({ coverImage: dataUrl })}
+              />
             </div>
             <label className="form-field"><span>Why did you want to read it? <small>Optional</small></span><textarea value={draft.reason} onChange={(event) => updateDraft({ reason: event.target.value })} rows={4} placeholder="What sold you on it?" /></label>
             {inheritedTags.length > 0 && <div className="inherited-series-tags"><small>From {selectedSeries?.name}</small><div>{inheritedTags.map((tag) => <span key={tag}>{tag}</span>)}</div></div>}

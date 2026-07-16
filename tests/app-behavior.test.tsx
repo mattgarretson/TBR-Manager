@@ -2,11 +2,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { PlotPileApp } from "../app/page";
+import type { CoverSearchClient } from "../components/library/cover-search";
 import { LibraryService } from "../lib/library/service";
 import { MemoryLibraryRepository } from "./helpers/memory-repository";
 import { snapshot, timestamp } from "./fixtures/library";
 
-function renderApp(initial = snapshot) {
+function renderApp(initial = snapshot, coverClient?: CoverSearchClient) {
   const repository = new MemoryLibraryRepository(initial);
   let generatedId = 0;
   const service = new LibraryService(repository, {
@@ -14,7 +15,7 @@ function renderApp(initial = snapshot) {
     createId: () => `created-id-${generatedId++}`,
   });
   const migrate = vi.fn().mockResolvedValue({ importedBooks: 0, localizedCovers: 0, pendingCovers: 0 });
-  render(<PlotPileApp controllerDependencies={{ repository, service, migrate }} />);
+  render(<PlotPileApp controllerDependencies={{ repository, service, migrate }} coverClient={coverClient} />);
   return { repository, service, migrate };
 }
 
@@ -80,6 +81,34 @@ describe("Plot Pile behavior", () => {
     await user.click(screen.getByRole("button", { name: "Save changes" }));
     await waitFor(() => expect(repository.snapshot.books[0].title).toBe("Updated Book"));
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("finds, localizes, previews, and saves a cover from an injected online client", async () => {
+    const user = userEvent.setup();
+    const coverClient: CoverSearchClient = {
+      searchCovers: vi.fn().mockResolvedValue([
+        { coverId: 42, title: "Unsouled", author: "Will Wight", year: 2016 },
+      ]),
+      coverImageUrl: vi.fn((coverId, size) => `https://covers.example/${coverId}-${size}.jpg`),
+      fetchCoverDataUrl: vi.fn().mockResolvedValue("data:image/jpeg;base64,Y292ZXI="),
+    };
+    const { repository } = renderApp({ books: [], series: [] }, coverClient);
+    await screen.findByRole("heading", { name: "My TBR" });
+    await user.click(screen.getByRole("button", { name: /Add your first book/ }));
+    await user.type(screen.getByRole("textbox", { name: "Book title" }), "Unsouled");
+    await user.type(screen.getByRole("textbox", { name: "Author" }), "Will Wight");
+    await user.click(screen.getByText("More details"));
+    await user.click(screen.getByRole("button", { name: "Find cover online" }));
+
+    await user.click(await screen.findByRole("button", { name: "Use cover for Unsouled" }));
+
+    const preview = await screen.findByRole("img", { name: "Selected cover preview" });
+    expect(preview.getAttribute("src")).toBe("data:image/jpeg;base64,Y292ZXI=");
+    expect(coverClient.searchCovers).toHaveBeenCalledWith({ title: "Unsouled", author: "Will Wight" });
+    expect(coverClient.fetchCoverDataUrl).toHaveBeenCalledWith(42);
+    await user.click(screen.getByRole("button", { name: "Add to my TBR" }));
+    await waitFor(() => expect(repository.snapshot.books).toHaveLength(1));
+    expect(repository.snapshot.books[0].coverImage).toMatch(/^data:image\/jpeg;base64,/);
   });
 
   it("protects dirty editor changes from accidental dismissal", async () => {

@@ -9,6 +9,9 @@ Plot Pile is a single-user, device-local application. IndexedDB is the authorita
 3. `LibraryService` constructs and validates persisted entities. It owns IDs, timestamps, backup validation, and compound commands.
 4. `useLibraryController` initializes migration, exposes command state to React, and translates storage errors into recoverable user messages.
 5. Feature components own view filters and editor drafts. They communicate through typed controller commands rather than importing IndexedDB helpers.
+6. `lib/covers` is a network-only client for cover search and download. Components receive it through props, and it never reads or writes IndexedDB.
+
+Open Library cover search (using only title and author) and the selected cover download are the app's only ordinary runtime network use. The only other runtime requests belong to the time-limited legacy migration path.
 
 ## Data invariants
 

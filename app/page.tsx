@@ -2,6 +2,7 @@
 
 import { useState, type ChangeEvent } from "react";
 import { BookEditor } from "../components/library/book-editor";
+import type { CoverSearchClient } from "../components/library/cover-search";
 import { LibraryView } from "../components/library/library-view";
 import { SeriesEditor } from "../components/library/series-editor";
 import { SeriesView } from "../components/library/series-view";
@@ -15,8 +16,10 @@ type SeriesEditorState = { series?: Series };
 
 export function PlotPileApp({
   controllerDependencies = {},
+  coverClient,
 }: {
   controllerDependencies?: LibraryControllerDependencies;
+  coverClient?: CoverSearchClient;
 }) {
   const library = useLibraryController(controllerDependencies);
   const device = useDeviceSettings(library.showNotice);
@@ -164,6 +167,7 @@ export function PlotPileApp({
           error={library.error}
           setError={library.setError}
           clearError={library.dismissError}
+          coverClient={coverClient}
           onSave={library.saveBook}
           onClose={() => setBookEditor(null)}
         />

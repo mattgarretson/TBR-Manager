@@ -929,6 +929,62 @@ h1,
 .standard-input { height: 39px; padding: 0 10px; font-size: 0.68rem; }
 .standard-input:disabled { opacity: 0.5; }
 
+.cover-search {
+  min-width: 0;
+  padding-top: 12px;
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+}
+
+.cover-search-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.cover-search-trigger {
+  min-height: 38px;
+  padding: 0 13px;
+  font-size: 0.64rem;
+}
+
+.cover-search-trigger:disabled,
+.cover-search-result:disabled {
+  opacity: 0.56;
+  cursor: wait;
+}
+
+.cover-search-trigger:disabled:not(:where([aria-busy="true"])) { cursor: not-allowed; }
+.cover-search-row span { color: var(--muted); font-size: 0.61rem; font-weight: 750; }
+.cover-search-message { margin: 10px 0 0 !important; font-size: 0.65rem !important; }
+
+.cover-search-grid {
+  max-width: 100%;
+  margin-top: 11px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cover-search-result {
+  min-width: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--card);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cover-search-result:hover { border-color: var(--berry); }
+.cover-search-result img { width: 100%; aspect-ratio: 2 / 3; display: block; background: var(--surface-soft); object-fit: cover; }
+.cover-search-caption { min-width: 0; padding: 7px; display: block; }
+.cover-search-caption strong { display: block; overflow: hidden; font-family: var(--font-dm-sans), sans-serif; font-size: 0.57rem; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.cover-search-caption small { margin-top: 3px; display: block; overflow: hidden; color: var(--muted); font-size: 0.5rem; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+
 .field-row { display: grid; gap: 0; }
 
 .form-field {
@@ -1244,6 +1300,7 @@ h1,
   .dialog-heading h2 { font-size: 2.55rem; }
   .cover-editor { padding: 15px; grid-template-columns: 92px minmax(0, 1fr); gap: 17px; }
   .cover-picker { width: 92px; height: 122px; }
+  .cover-search-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
   .field-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
   .numbered-fields { grid-template-columns: minmax(0, 2fr) minmax(100px, 0.7fr) minmax(100px, 0.7fr); }
   .batch-mode-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
