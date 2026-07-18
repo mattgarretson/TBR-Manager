@@ -10,11 +10,15 @@ function responseFetcher(response: Response): typeof fetch {
   return vi.fn().mockResolvedValue(response) as unknown as typeof fetch;
 }
 
+function searchResponse(docs: unknown[] = []) {
+  return new Response(JSON.stringify({ docs }), {
+    headers: { "content-type": "application/json" },
+  });
+}
+
 describe("Open Library cover client", () => {
   it("encodes title and author queries and requests only cover result fields", async () => {
-    const fetcher = responseFetcher(new Response(JSON.stringify({ docs: [] }), {
-      headers: { "content-type": "application/json" },
-    }));
+    const fetcher = responseFetcher(searchResponse([{ cover_i: 1, title: "A Book & More" }]));
 
     await searchCovers({ title: "A Book & More", author: "Writer & Co" }, fetcher);
 
@@ -25,6 +29,64 @@ describe("Open Library cover client", () => {
     expect(requestUrl.searchParams.get("fields")).toBe("title,author_name,first_publish_year,cover_i");
     expect(requestUrl.searchParams.get("limit")).toBe("12");
     expect(String(vi.mocked(fetcher).mock.calls[0][0])).toContain("title=A+Book+%26+More");
+  });
+
+  it("falls back from title and author to title only", async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(searchResponse())
+      .mockResolvedValueOnce(searchResponse([
+        { cover_i: 42, title: "Unsouled", author_name: ["Will Wight"] },
+      ])) as unknown as typeof fetch;
+
+    await expect(searchCovers({ title: "Unsouled", author: "Will Wight" }, fetcher))
+      .resolves.toEqual([{ coverId: 42, title: "Unsouled", author: "Will Wight", year: null }]);
+
+    const urls = vi.mocked(fetcher).mock.calls.map(([request]) => new URL(String(request)));
+    expect(urls).toHaveLength(2);
+    expect(urls[0].searchParams.get("author")).toBe("Will Wight");
+    expect(urls[1].searchParams.get("title")).toBe("Unsouled");
+    expect(urls[1].searchParams.has("author")).toBe(false);
+  });
+
+  it("falls back to a general title and author query after title-only misses", async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(searchResponse())
+      .mockResolvedValueOnce(searchResponse())
+      .mockResolvedValueOnce(searchResponse([{ cover_i: 43, title: "Unsouled" }])) as unknown as typeof fetch;
+
+    await expect(searchCovers({ title: "Unsouled", author: "Will Wight" }, fetcher))
+      .resolves.toEqual([{ coverId: 43, title: "Unsouled", author: "", year: null }]);
+
+    const thirdUrl = new URL(String(vi.mocked(fetcher).mock.calls[2][0]));
+    expect(thirdUrl.searchParams.get("q")).toBe("Unsouled Will Wight");
+    expect(thirdUrl.searchParams.has("title")).toBe(false);
+    expect(thirdUrl.searchParams.get("fields")).toBe("title,author_name,first_publish_year,cover_i");
+    expect(thirdUrl.searchParams.get("limit")).toBe("12");
+  });
+
+  it("falls back to the pre-colon title with author as the final rung", async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(searchResponse())
+      .mockResolvedValueOnce(searchResponse())
+      .mockResolvedValueOnce(searchResponse())
+      .mockResolvedValueOnce(searchResponse([{ cover_i: 44, title: "A Long Book" }])) as unknown as typeof fetch;
+
+    await expect(searchCovers({ title: "A Long Book: A Very Long Subtitle", author: "A. Writer" }, fetcher))
+      .resolves.toEqual([{ coverId: 44, title: "A Long Book", author: "", year: null }]);
+
+    const fourthUrl = new URL(String(vi.mocked(fetcher).mock.calls[3][0]));
+    expect(fourthUrl.searchParams.get("title")).toBe("A Long Book");
+    expect(fourthUrl.searchParams.get("author")).toBe("A. Writer");
+  });
+
+  it("returns no candidates after every fallback rung fails", async () => {
+    const fetcher = vi.fn().mockImplementation(() => Promise.resolve(searchResponse())) as unknown as typeof fetch;
+
+    await expect(searchCovers({
+      title: "A Long Book: A Very Long Subtitle",
+      author: "A. Writer",
+    }, fetcher)).resolves.toEqual([]);
+    expect(fetcher).toHaveBeenCalledTimes(4);
   });
 
   it("omits an empty author and maps, filters, and deduplicates candidates", async () => {

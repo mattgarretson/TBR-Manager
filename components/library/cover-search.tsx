@@ -83,7 +83,7 @@ export function CoverSearch({
         {downloadingCoverId !== null && <span role="status">Attaching cover…</span>}
       </div>
 
-      {status === "empty" && <p className="cover-search-message" role="status">No covers found for that title.</p>}
+      {status === "empty" && <p className="cover-search-message" role="status">No covers found — Open Library may not have this book. Try a shorter title, or add a photo of the cover instead.</p>}
 
       {status === "results" && (
         <div className="cover-search-grid" aria-label="Cover search results">
