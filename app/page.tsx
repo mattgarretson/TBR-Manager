@@ -4,27 +4,36 @@ import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { BookEditor } from "../components/library/book-editor";
 import type { CoverSearchClient } from "../components/library/cover-search";
 import { LibraryView } from "../components/library/library-view";
+import { LinkImport } from "../components/library/link-import";
 import { SeriesEditor } from "../components/library/series-editor";
 import { SeriesView } from "../components/library/series-view";
 import { SettingsView } from "../components/library/settings-view";
 import type { Book, BookStatus, Series, ViewName } from "../lib/library/types";
 import { selectStoredTagCounts } from "../lib/library/selectors";
-import { parseSharedBook, type SharedBookDraft } from "../lib/share/parse";
+import { extractUrls, parseSharedBook, type SharedBookDraft } from "../lib/share/parse";
 import { useDeviceSettings } from "./use-device-settings";
 import { useLibraryController, type LibraryControllerDependencies } from "./use-library-controller";
 
 type BookEditorState = { book?: Book; preselectedSeriesId?: string; prefill?: SharedBookDraft };
 type SeriesEditorState = { series?: Series };
+type LinkImportState = { initialText?: string };
+type SharedLaunch =
+  | { kind: "book"; draft: SharedBookDraft }
+  | { kind: "links"; initialText: string };
 
-function sharedDraftFromLocation(): SharedBookDraft | null {
+function sharedLaunchFromLocation(): SharedLaunch | null {
   if (typeof window === "undefined") return null;
   const location = new URL(window.location.href);
   if (!["title", "text", "url"].some((key) => location.searchParams.has(key))) return null;
-  return parseSharedBook({
+  const payload = {
     title: location.searchParams.get("title"),
     text: location.searchParams.get("text"),
     url: location.searchParams.get("url"),
-  });
+  };
+  const initialText = [payload.title, payload.text, payload.url].filter(Boolean).join("\n");
+  return extractUrls(initialText).length > 1
+    ? { kind: "links", initialText }
+    : { kind: "book", draft: parseSharedBook(payload) };
 }
 
 export function PlotPileApp({
@@ -45,7 +54,8 @@ export function PlotPileApp({
   const [seriesFocus, setSeriesFocus] = useState("");
   const [bookEditor, setBookEditor] = useState<BookEditorState | null>(null);
   const [seriesEditor, setSeriesEditor] = useState<SeriesEditorState | null>(null);
-  const [pendingShare, setPendingShare] = useState<SharedBookDraft | null>(sharedDraftFromLocation);
+  const [linkImport, setLinkImport] = useState<LinkImportState | null>(null);
+  const [pendingShare, setPendingShare] = useState<SharedLaunch | null>(sharedLaunchFromLocation);
 
   useEffect(() => {
     if (!pendingShare) return;
@@ -60,8 +70,11 @@ export function PlotPileApp({
     );
   }, [pendingShare]);
 
-  const activeBookEditor = bookEditor ?? (!library.loading && pendingShare
-    ? { prefill: pendingShare }
+  const activeBookEditor = bookEditor ?? (!library.loading && pendingShare?.kind === "book"
+    ? { prefill: pendingShare.draft }
+    : null);
+  const activeLinkImport = linkImport ?? (!library.loading && pendingShare?.kind === "links"
+    ? { initialText: pendingShare.initialText }
     : null);
 
   function changeView(nextView: ViewName) {
@@ -79,6 +92,11 @@ export function PlotPileApp({
   function openEditBook(book: Book) {
     library.dismissError();
     setBookEditor({ book });
+  }
+
+  function openLinkImport() {
+    library.dismissError();
+    setLinkImport({});
   }
 
   function openNewSeries() {
@@ -150,10 +168,13 @@ export function PlotPileApp({
           <button className={view === "series" ? "active" : ""} type="button" aria-current={view === "series" ? "page" : undefined} onClick={() => changeView("series")}>Series</button>
           <button className={view === "settings" ? "active" : ""} type="button" aria-current={view === "settings" ? "page" : undefined} onClick={() => changeView("settings")}>More</button>
         </nav>
-        <button className="primary-button desktop-add" type="button" onClick={() => openNewBook()}><span aria-hidden="true">＋</span> Add book</button>
+        <div className="desktop-add-actions">
+          <button className="secondary-button" type="button" onClick={openLinkImport}>Add from links</button>
+          <button className="primary-button" type="button" onClick={() => openNewBook()}><span aria-hidden="true">＋</span> Add book</button>
+        </div>
       </header>
 
-      {library.error && !activeBookEditor && !seriesEditor && (
+      {library.error && !activeBookEditor && !activeLinkImport && !seriesEditor && (
         <div className="global-error" role="alert"><span>{library.error}</span><button type="button" onClick={library.dismissError}>Dismiss</button></div>
       )}
 
@@ -196,6 +217,7 @@ export function PlotPileApp({
           lastBackupAt={library.lastBackupAt}
           device={device}
           onDownload={() => void library.downloadBackup()}
+          onAddFromLinks={openLinkImport}
           onImport={(event) => void importBackup(event)}
           onErase={() => void eraseLibrary()}
           onRenameTag={library.renameTag}
@@ -222,6 +244,22 @@ export function PlotPileApp({
           onSave={library.saveBook}
           onClose={() => {
             setBookEditor(null);
+            setPendingShare(null);
+          }}
+        />
+      )}
+      {activeLinkImport && (
+        <LinkImport
+          key={activeLinkImport.initialText ?? "manual"}
+          initialText={activeLinkImport.initialText}
+          books={books}
+          saving={library.saving}
+          error={library.error}
+          setError={library.setError}
+          clearError={library.dismissError}
+          onSave={library.saveBooks}
+          onClose={() => {
+            setLinkImport(null);
             setPendingShare(null);
           }}
         />

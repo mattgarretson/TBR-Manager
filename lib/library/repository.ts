@@ -6,6 +6,7 @@ export const BACKUP_NUDGE_SNOOZED_UNTIL_META = "backup-nudge-snoozed-until";
 export interface LibraryRepository {
   read(): Promise<LibrarySnapshot>;
   commitBook(book: Book, seriesToCreate?: Series): Promise<void>;
+  saveBooks(books: Book[]): Promise<void>;
   saveSeries(series: Series): Promise<void>;
   saveSeriesWithBooks(series: Series, books: Book[]): Promise<void>;
   saveBooksAndSeries(books: Book[], series: Series[]): Promise<void>;

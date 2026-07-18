@@ -243,7 +243,7 @@ label:has(input[type="file"]):focus-within {
   color: var(--berry);
 }
 
-.desktop-add { display: none; }
+.desktop-add-actions { display: none; }
 
 .page {
   width: min(1120px, calc(100% - 28px));
@@ -1255,6 +1255,42 @@ h1,
 .batch-row input { width: 100%; height: 38px; padding: 0 9px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--card); color: var(--ink); font-size: 0.66rem; }
 .batch-row > button { width: 32px; height: 38px; border: 0; background: transparent; color: #9a7169; font-size: 1rem; cursor: pointer; }
 
+.link-import-hint { margin: -7px 0 13px; }
+.link-import-rows { max-height: 370px; overflow-y: auto; }
+.link-import-row {
+  padding: 9px 7px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 32px;
+  align-items: start;
+  gap: 7px;
+}
+.link-import-row + .link-import-row { border-top: 1px solid var(--line); }
+.link-import-row.duplicate { background: var(--warning-bg); }
+.link-import-choice { min-height: 38px; display: grid; place-items: center; }
+.link-import-choice input { width: 18px; height: 18px; accent-color: var(--berry); }
+.link-import-fields { min-width: 0; display: grid; gap: 7px; }
+.link-import-fields label { min-width: 0; display: grid; gap: 4px; }
+.link-import-fields label > span { color: var(--muted); font-size: 0.54rem; font-weight: 760; }
+.link-import-fields input {
+  width: 100%;
+  height: 38px;
+  padding: 0 9px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 0.66rem;
+}
+.link-import-source { grid-column: 1 / -1; }
+.link-import-source input { font-size: 0.58rem; }
+.link-duplicate-flag {
+  grid-column: 1 / -1;
+  color: var(--warning-text);
+  font-size: 0.58rem;
+  font-weight: 780;
+}
+.link-import-remove { width: 32px; height: 38px; border: 0; background: transparent; color: #9a7169; font-size: 1rem; cursor: pointer; }
+
 .nested-fields {
   margin: 2px 0 17px;
   padding: 14px 14px 1px;
@@ -1435,7 +1471,8 @@ h1,
 
   .main-nav { width: auto; display: flex; gap: 5px; }
   .main-nav button { padding: 0 14px; border-radius: 999px; font-size: 0.72rem; font-weight: 780; }
-  .desktop-add { display: inline-flex; }
+  .desktop-add-actions { display: inline-flex; align-items: center; gap: 8px; }
+  .desktop-add-actions .secondary-button { padding-right: 13px; padding-left: 13px; }
 
   .page { width: min(1120px, calc(100% - 40px)); padding-top: 48px; }
   .page-heading { flex-wrap: nowrap; }
@@ -1472,6 +1509,7 @@ h1,
   .dialog-backdrop { padding: 28px; place-items: center; }
   .dialog { width: min(720px, 100%); max-height: calc(100vh - 56px); padding: 28px; border-radius: 22px; }
   .series-dialog { width: min(760px, 100%); }
+  .link-import-dialog { width: min(820px, 100%); }
   .dialog-grabber { display: none; }
   .dialog-heading h2 { font-size: 2.55rem; }
   .cover-editor { padding: 15px; grid-template-columns: 92px minmax(0, 1fr); gap: 17px; }
@@ -1480,6 +1518,7 @@ h1,
   .field-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
   .numbered-fields { grid-template-columns: minmax(0, 2fr) minmax(100px, 0.7fr) minmax(100px, 0.7fr); }
   .batch-mode-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .link-import-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dialog-actions { bottom: -28px; margin: 23px -28px -28px; padding: 14px 28px; }
   .dialog-actions .primary-button { flex: 0 1 auto; }
   .toast { right: auto; bottom: 28px; left: 50%; min-width: 220px; transform: translateX(-50%); }

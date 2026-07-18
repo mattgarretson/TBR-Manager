@@ -72,6 +72,44 @@ describe("LibraryService", () => {
     ]));
   });
 
+  it("constructs standalone TBR books and commits the batch through one repository command", async () => {
+    const repository = new MemoryLibraryRepository();
+    const saveBooks = vi.spyOn(repository, "saveBooks");
+    const ids = ["batch-1", "batch-2"];
+    const service = new LibraryService(repository, {
+      now: () => new Date(timestamp),
+      createId: () => ids.shift()!,
+    });
+
+    const result = await service.saveBooks([
+      { title: " Book One ", author: " Writer One ", sourceUrl: "https://example.com/one" },
+      { title: "Book Two", author: "Writer Two", sourceUrl: "https://example.com/two" },
+    ]);
+
+    expect(result.created).toBe(2);
+    expect(saveBooks).toHaveBeenCalledOnce();
+    expect(repository.snapshot.books).toEqual([
+      expect.objectContaining({
+        id: "batch-1",
+        title: "Book One",
+        author: "Writer One",
+        sourceUrl: "https://example.com/one",
+        seriesId: null,
+        status: "tbr",
+        coverImage: "",
+      }),
+      expect.objectContaining({
+        id: "batch-2",
+        title: "Book Two",
+        author: "Writer Two",
+        sourceUrl: "https://example.com/two",
+        seriesId: null,
+        status: "tbr",
+        coverImage: "",
+      }),
+    ]);
+  });
+
   it("updates and deletes existing records", async () => {
     const repository = new MemoryLibraryRepository(snapshot);
     const service = new LibraryService(repository, { now: () => new Date("2028-01-01T00:00:00.000Z") });

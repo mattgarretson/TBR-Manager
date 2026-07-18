@@ -26,6 +26,7 @@ export function SettingsView({
   lastBackupAt,
   device,
   onDownload,
+  onAddFromLinks,
   onImport,
   onErase,
   onRenameTag,
@@ -38,6 +39,7 @@ export function SettingsView({
   lastBackupAt: string | null;
   device: DeviceSettings;
   onDownload: () => void;
+  onAddFromLinks: () => void;
   onImport: (event: ChangeEvent<HTMLInputElement>) => void;
   onErase: () => void;
   onRenameTag: (currentTag: string, nextTag: string) => Promise<void>;
@@ -129,6 +131,10 @@ export function SettingsView({
               </div>
             ) : <p className={styles.emptyTags}>Tags added to books or series will appear here.</p>}
           </div>
+        </article>
+        <article className={`settings-card ${styles.card}`}>
+          <span className={`settings-icon ${styles.icon}`} aria-hidden="true">↗</span>
+          <div><p className="eyebrow">Tab cleanup</p><h2>Add from links</h2><p>Paste a group of Goodreads, store, or social links and review them before adding the books.</p><button className="secondary-button" type="button" onClick={onAddFromLinks}>Add from links</button></div>
         </article>
         <article className={`settings-card ${styles.card}`}>
           <span className={`settings-icon ${styles.icon}`} aria-hidden="true">⇩</span>

@@ -9,7 +9,7 @@ import {
   LAST_BACKUP_AT_META,
 } from "../lib/library/repository";
 import { book, series, snapshot } from "./fixtures/library";
-import type { Series } from "../lib/library/types";
+import type { Book, Series } from "../lib/library/types";
 
 function deleteDatabase() {
   return new Promise<void>((resolve, reject) => {
@@ -65,6 +65,18 @@ describe("IndexedDbLibraryRepository", () => {
     const result = await repository.read();
     expect(result.series).toEqual([series]);
     expect(result.books).toEqual(expect.arrayContaining([book, secondBook]));
+  });
+
+  it("commits standalone books in one batch and rolls the whole transaction back on failure", async () => {
+    const repository = new IndexedDbLibraryRepository();
+    const secondBook = { ...book, id: "book-2", title: "Book Two", seriesId: null };
+    await repository.saveBooks([book, secondBook]);
+    expect((await repository.read()).books).toEqual(expect.arrayContaining([book, secondBook]));
+
+    await repository.replace({ books: [], series: [] });
+    const invalidBook = { ...secondBook, id: undefined } as unknown as Book;
+    await expect(repository.saveBooks([book, invalidBook])).rejects.toBeTruthy();
+    expect(await repository.read()).toEqual({ books: [], series: [] });
   });
 
   it("updates the given books and series while leaving unrelated stored records untouched", async () => {

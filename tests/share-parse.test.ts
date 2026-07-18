@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSharedBook } from "../lib/share/parse";
+import { extractUrls, parseSharedBook, parseSharedLinks } from "../lib/share/parse";
 
 describe("shared book parsing", () => {
   it("prefers a Goodreads share title over its URL slug", () => {
@@ -52,5 +52,31 @@ describe("shared book parsing", () => {
       author: "",
       sourceUrl: "",
     });
+  });
+
+  it("extracts and parses multiple URLs while de-duplicating identical links", () => {
+    const value = [
+      "Book One by A. Writer | Goodreads",
+      "https://www.goodreads.com/book/show/123-book-one",
+      "A TikTok recommendation: https://www.tiktok.com/t/ZT8abc123/.",
+      "Duplicate: https://www.goodreads.com/book/show/123-book-one",
+    ].join("\n");
+
+    expect(extractUrls(value)).toEqual([
+      "https://www.goodreads.com/book/show/123-book-one",
+      "https://www.tiktok.com/t/ZT8abc123/",
+    ]);
+    expect(parseSharedLinks(value)).toEqual([
+      {
+        title: "Book One",
+        author: "A. Writer",
+        sourceUrl: "https://www.goodreads.com/book/show/123-book-one",
+      },
+      {
+        title: "",
+        author: "",
+        sourceUrl: "https://www.tiktok.com/t/ZT8abc123/",
+      },
+    ]);
   });
 });

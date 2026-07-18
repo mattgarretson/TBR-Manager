@@ -76,6 +76,72 @@ describe("Plot Pile behavior", () => {
     expect(screen.getByRole("link", { name: "Open where A Psalm for the Wild-Built was found" })).toBeTruthy();
   });
 
+  it("routes a share containing several links into the batch preview", async () => {
+    const sharedText = [
+      "Book One by A. Writer | Goodreads",
+      "https://www.goodreads.com/book/show/123-book-one",
+      "New Book by New Writer - Amazon.com",
+      "https://www.amazon.com/New-Book-New-Writer/dp/B000000001",
+    ].join("\n");
+    window.history.pushState({}, "", `/?text=${encodeURIComponent(sharedText)}`);
+
+    renderApp();
+
+    expect(await screen.findByRole("heading", { name: "Add from links" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "New book" })).toBeNull();
+    expect(screen.getByLabelText("Books from links").textContent).toContain("2 links found");
+    expect(window.location.search).toBe("");
+  });
+
+  it("pastes, previews, edits, and atomically saves selected link drafts", async () => {
+    const user = userEvent.setup();
+    const { repository } = renderApp();
+    await screen.findByText("Book One");
+    await user.click(screen.getByRole("button", { name: "Add from links" }));
+    const links = screen.getByRole("textbox", { name: "Links to books" });
+    const pasted = [
+      "Book One by A. Writer | Goodreads",
+      "https://www.goodreads.com/book/show/123-book-one",
+      "New Book by New Writer - Amazon.com",
+      "https://www.amazon.com/New-Book-New-Writer/dp/B000000001",
+      "https://www.amazon.com/New-Book-New-Writer/dp/B000000001",
+    ].join("\n");
+    await user.click(links);
+    await user.paste(pasted);
+    await user.click(screen.getByRole("button", { name: "Preview links" }));
+
+    expect(screen.getByLabelText("Books from links").textContent).toContain("2 links found");
+    expect(screen.getByText("Already in library: Book One by A. Writer")).toBeTruthy();
+    const duplicateChoice = screen.getByRole("checkbox", { name: "Include Book One" }) as HTMLInputElement;
+    expect(duplicateChoice.checked).toBe(false);
+
+    const firstTitle = screen.getByRole("textbox", { name: "Title for link 1" });
+    await user.clear(firstTitle);
+    await user.type(firstTitle, "Book One Revised");
+    await user.click(duplicateChoice);
+    await user.click(screen.getByRole("button", { name: "Save 2 books" }));
+
+    await waitFor(() => expect(repository.snapshot.books).toHaveLength(3));
+    expect(repository.snapshot.books).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        title: "Book One Revised",
+        author: "A. Writer",
+        sourceUrl: "https://www.goodreads.com/book/show/123-book-one",
+        seriesId: null,
+        status: "tbr",
+        coverImage: "",
+      }),
+      expect.objectContaining({
+        title: "New Book",
+        author: "New Writer",
+        sourceUrl: "https://www.amazon.com/New-Book-New-Writer/dp/B000000001",
+        seriesId: null,
+        status: "tbr",
+        coverImage: "",
+      }),
+    ]));
+  });
+
   it("navigates between the complete mobile information architecture", async () => {
     const user = userEvent.setup();
     renderApp();

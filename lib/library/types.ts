@@ -82,6 +82,12 @@ export type SaveBookInput = {
   newSeries?: NewSeriesInput;
 };
 
+export type SaveBookBatchInput = {
+  title: string;
+  author: string;
+  sourceUrl: string;
+};
+
 export type SaveSeriesInput = {
   id?: string;
   name: string;

@@ -5,7 +5,7 @@ import { IndexedDbLibraryRepository } from "../lib/library/indexeddb-repository"
 import { migrateLegacyLibrary } from "../lib/library/legacy";
 import type { LibraryRepository } from "../lib/library/repository";
 import { LibraryService } from "../lib/library/service";
-import type { Book, LibrarySnapshot, SaveBookInput, SaveSeriesInput } from "../lib/library/types";
+import type { Book, LibrarySnapshot, SaveBookBatchInput, SaveBookInput, SaveSeriesInput } from "../lib/library/types";
 import { currentLocalDate } from "../lib/library/model";
 import { libraryErrorMessage } from "../lib/library/errors";
 
@@ -104,6 +104,13 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     const result = await command(() => service.saveBook(input));
     setSnapshot(result.snapshot);
     setNotice(result.created ? "Added to your TBR" : "Book updated");
+    return result;
+  }
+
+  async function saveBooks(inputs: SaveBookBatchInput[]) {
+    const result = await command(() => service.saveBooks(inputs));
+    setSnapshot(result.snapshot);
+    setNotice(`${result.created} ${result.created === 1 ? "book" : "books"} added to your TBR`);
     return result;
   }
 
@@ -206,6 +213,7 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     showNotice: setNotice,
     dismissError: () => setError(""),
     saveBook,
+    saveBooks,
     saveSeries,
     deleteBook,
     undoBookRemoval,

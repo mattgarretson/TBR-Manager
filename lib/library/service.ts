@@ -22,6 +22,7 @@ import type {
   Book,
   LibraryBackup,
   LibrarySnapshot,
+  SaveBookBatchInput,
   SaveBookInput,
   SaveSeriesInput,
   Series,
@@ -126,6 +127,38 @@ export class LibraryService {
     };
     await this.repository.commitBook(book, seriesToCreate);
     return { snapshot: await this.repository.read(), created: !existing };
+  }
+
+  async saveBooks(inputs: SaveBookBatchInput[]): Promise<{ snapshot: LibrarySnapshot; created: number }> {
+    if (!inputs.length) throw new Error("Choose at least one book to add.");
+    const now = this.now().toISOString();
+    const books: Book[] = inputs.map((input) => {
+      const title = input.title.trim();
+      const author = input.author.trim();
+      if (!title || !author) throw new Error("Every selected book needs both a title and an author.");
+      const sourceUrl = normalizeSourceUrl(input.sourceUrl);
+      if (input.sourceUrl.trim() && !sourceUrl) {
+        throw new Error("Every source must be a valid HTTP or HTTPS URL.");
+      }
+      return {
+        id: this.createId(),
+        title,
+        author,
+        reason: "",
+        tags: [],
+        coverImage: "",
+        seriesId: null,
+        seriesPosition: "",
+        releaseDate: "",
+        status: "tbr",
+        finishedDate: "",
+        sourceUrl,
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
+    await this.repository.saveBooks(books);
+    return { snapshot: await this.repository.read(), created: books.length };
   }
 
   async saveSeries(input: SaveSeriesInput): Promise<{ snapshot: LibrarySnapshot; created: boolean; booksCreated: number }> {

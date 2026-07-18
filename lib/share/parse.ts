@@ -23,9 +23,24 @@ function cleanUrl(value: string): string {
   }
 }
 
+type UrlMatch = {
+  sourceUrl: string;
+  index: number;
+  end: number;
+};
+
+function urlMatches(value: string): UrlMatch[] {
+  return [...value.matchAll(URL_PATTERN)]
+    .map((match) => ({
+      sourceUrl: cleanUrl(match[0]),
+      index: match.index,
+      end: match.index + match[0].length,
+    }))
+    .filter((match) => Boolean(match.sourceUrl));
+}
+
 export function extractUrls(value: string): string[] {
-  const urls = value.match(URL_PATTERN) ?? [];
-  return [...new Set(urls.map(cleanUrl).filter(Boolean))];
+  return [...new Set(urlMatches(value).map((match) => match.sourceUrl))];
 }
 
 function payloadUrls(payload: SharedPayload): string[] {
@@ -104,4 +119,22 @@ export function parseSharedBook(payload: SharedPayload): SharedBookDraft {
     author: guesses.author,
     sourceUrl,
   };
+}
+
+export function parseSharedLinks(value: string): SharedBookDraft[] {
+  const seen = new Set<string>();
+  const drafts: SharedBookDraft[] = [];
+  let previousEnd = 0;
+  for (const match of urlMatches(value)) {
+    const context = value.slice(previousEnd, match.index).trim();
+    previousEnd = match.end;
+    if (seen.has(match.sourceUrl)) continue;
+    seen.add(match.sourceUrl);
+    drafts.push(parseSharedBook({
+      title: context,
+      text: context,
+      url: match.sourceUrl,
+    }));
+  }
+  return drafts;
 }
