@@ -122,6 +122,45 @@ describe("LibraryService", () => {
     });
   });
 
+  it.each(["tbr", "reading"] as const)(
+    "never persists a finished date for a %s book",
+    async (status) => {
+      const repository = new MemoryLibraryRepository(snapshot);
+      const service = new LibraryService(repository, {
+        now: () => new Date("2027-03-04T12:00:00.000Z"),
+      });
+
+      await service.saveBook({
+        ...book,
+        status,
+        finishedDate: "2027-03-03",
+      });
+
+      expect(repository.snapshot.books[0]).toMatchObject({
+        status,
+        finishedDate: "",
+      });
+    },
+  );
+
+  it("stamps the local date when a finished book has no finished date", async () => {
+    const repository = new MemoryLibraryRepository(snapshot);
+    const service = new LibraryService(repository, {
+      now: () => new Date("2027-03-04T12:00:00.000Z"),
+    });
+
+    await service.saveBook({
+      ...book,
+      status: "finished",
+      finishedDate: "",
+    });
+
+    expect(repository.snapshot.books[0]).toMatchObject({
+      status: "finished",
+      finishedDate: "2027-03-04",
+    });
+  });
+
   it("rejects impossible calendar dates before persistence", async () => {
     const repository = new MemoryLibraryRepository();
     const service = new LibraryService(repository, { createId: () => "new" });

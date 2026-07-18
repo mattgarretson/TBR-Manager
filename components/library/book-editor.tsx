@@ -9,6 +9,7 @@ import {
 } from "../../lib/library/model";
 import type {
   Book,
+  BookStatus,
   LibrarySnapshot,
   SaveBookInput,
   Series,
@@ -29,6 +30,8 @@ type BookDraft = {
   seriesId: string;
   seriesPosition: string;
   releaseDate: string;
+  status: BookStatus;
+  finishedDate: string;
   newSeriesName: string;
   newSeriesStatus: SeriesStatus;
   newSeriesNextTitle: string;
@@ -51,6 +54,8 @@ function initialDraft(
     seriesId: book?.seriesId ?? preselectedSeriesId,
     seriesPosition: book?.seriesPosition ?? (selectedSeries ? nextSeriesPosition(books, selectedSeries.id) : ""),
     releaseDate: book?.releaseDate ?? "",
+    status: book?.status ?? "tbr",
+    finishedDate: book?.finishedDate ?? "",
     newSeriesName: "",
     newSeriesStatus: "incomplete",
     newSeriesNextTitle: "",
@@ -164,6 +169,8 @@ export function BookEditor({
       seriesId: draft.seriesId && draft.seriesId !== NEW_SERIES_VALUE ? draft.seriesId : null,
       seriesPosition: draft.seriesPosition,
       releaseDate: draft.releaseDate,
+      status: draft.status,
+      finishedDate: draft.finishedDate,
       newSeries: draft.seriesId === NEW_SERIES_VALUE ? {
         name: draft.newSeriesName,
         author: draft.author,
@@ -214,6 +221,16 @@ export function BookEditor({
         <div className="field-row">
           <label className="form-field"><span>Series</span><select value={draft.seriesId} onChange={(event) => changeSeries(event.target.value)}><option value="">Standalone book</option>{[...series].sort((a, b) => a.name.localeCompare(b.name)).map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}<option value={NEW_SERIES_VALUE}>＋ Create a new series</option></select></label>
           <label className="form-field"><span>Book release date <small>Optional</small></span><input type="date" value={draft.releaseDate} onChange={(event) => updateDraft({ releaseDate: event.target.value })} /></label>
+        </div>
+        <div className="field-row">
+          <label className="form-field"><span>Reading status</span><select value={draft.status} onChange={(event) => {
+            const status = event.target.value as BookStatus;
+            updateDraft({
+              status,
+              finishedDate: status === "finished" || status === "dnf" ? draft.finishedDate : "",
+            });
+          }}><option value="tbr">To read</option><option value="reading">Reading</option><option value="finished">Finished</option><option value="dnf">Didn&apos;t finish</option></select></label>
+          {(draft.status === "finished" || draft.status === "dnf") && <label className="form-field"><span>Finished date <small>Optional; defaults to today</small></span><input type="date" value={draft.finishedDate} onChange={(event) => updateDraft({ finishedDate: event.target.value })} /></label>}
         </div>
         {draft.seriesId && draft.seriesId !== NEW_SERIES_VALUE && <label className="form-field compact-field"><span>Position in series</span><input value={draft.seriesPosition} onChange={(event) => updateDraft({ seriesPosition: event.target.value })} placeholder="1, 2, 2.5, novella…" /></label>}
         {draft.seriesId === NEW_SERIES_VALUE && (

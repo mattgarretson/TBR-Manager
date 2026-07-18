@@ -7,7 +7,7 @@ import { LibraryView } from "../components/library/library-view";
 import { SeriesEditor } from "../components/library/series-editor";
 import { SeriesView } from "../components/library/series-view";
 import { SettingsView } from "../components/library/settings-view";
-import type { Book, Series, ViewName } from "../lib/library/types";
+import type { Book, BookStatus, Series, ViewName } from "../lib/library/types";
 import { useDeviceSettings } from "./use-device-settings";
 import { useLibraryController, type LibraryControllerDependencies } from "./use-library-controller";
 
@@ -60,6 +60,12 @@ export function PlotPileApp({
     if (!window.confirm(`Remove “${book.title}” from this device?`)) return;
     try {
       await library.deleteBook(book.id);
+    } catch {}
+  }
+
+  async function changeBookStatus(book: Book, status: BookStatus) {
+    try {
+      await library.saveBook({ ...book, status });
     } catch {}
   }
 
@@ -122,8 +128,10 @@ export function PlotPileApp({
           books={books}
           series={series}
           loading={library.loading}
+          saving={library.saving}
           onAddBook={() => openNewBook()}
           onEditBook={openEditBook}
+          onChangeBookStatus={(book, status) => void changeBookStatus(book, status)}
           onRemoveBook={(book) => void removeBook(book)}
           onOpenSeries={(name) => {
             setSeriesFocus(name);

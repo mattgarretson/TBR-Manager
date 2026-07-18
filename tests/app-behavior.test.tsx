@@ -44,6 +44,26 @@ describe("Plot Pile behavior", () => {
     expect(tagButtons[0].getAttribute("aria-pressed")).toBe("false");
   });
 
+  it("moves a card from to read to reading to finished and stamps the date", async () => {
+    const user = userEvent.setup();
+    const { repository } = renderApp();
+    await screen.findByText("Book One");
+
+    await user.click(screen.getByRole("button", { name: "Start reading" }));
+    await waitFor(() => expect(repository.snapshot.books[0].status).toBe("reading"));
+
+    await user.click(screen.getByRole("button", { name: "Reading" }));
+    await user.click(await screen.findByRole("button", { name: "Finished" }));
+    await waitFor(() => expect(repository.snapshot.books[0]).toMatchObject({
+      status: "finished",
+      finishedDate: "2027-01-01",
+    }));
+
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    expect(await screen.findByText("Book One")).toBeTruthy();
+    expect(screen.getByText("Finished", { selector: ".book-status-badge" })).toBeTruthy();
+  });
+
   it("shows inherited series tags on books and filters by them", async () => {
     const user = userEvent.setup();
     renderApp();

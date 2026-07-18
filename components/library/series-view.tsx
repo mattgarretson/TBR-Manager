@@ -81,7 +81,12 @@ export function SeriesView({
                       <button type="button" onClick={() => onEditBook(book)}>
                         <span className="book-order">{book.seriesPosition || "—"}</span>
                         <span><strong>{book.title}</strong><small>{book.author}{book.releaseDate ? ` · ${formatDate(book.releaseDate)}` : ""}</small></span>
-                        <span aria-hidden="true">›</span>
+                        <span className="series-book-trailing">
+                          {book.status === "reading" && <span className="series-book-status reading">Reading</span>}
+                          {book.status === "finished" && <span className="series-book-status finished" aria-label="Finished"><span aria-hidden="true">✓</span></span>}
+                          {book.status === "dnf" && <span className="series-book-status dnf">DNF</span>}
+                          <span aria-hidden="true">›</span>
+                        </span>
                       </button>
                     </li>
                   ))}

@@ -2,6 +2,7 @@ import { effectiveBookTags, nextSeriesRelease, sortSeriesBooks } from "./model";
 import type {
   Book,
   BookScope,
+  BookShelf,
   BookSort,
   Series,
   SeriesScope,
@@ -39,18 +40,23 @@ export function selectVisibleBooks(input: {
   series: readonly Series[];
   query: string;
   activeTag: string;
+  shelf: BookShelf;
   scope: BookScope;
   sort: BookSort;
   direction: SortDirection;
   today: string;
 }): Book[] {
-  const { books, series, query, activeTag, scope, sort, direction, today } = input;
+  const { books, series, query, activeTag, shelf, scope, sort, direction, today } = input;
   const seriesMap = new Map(series.map((item) => [item.id, item]));
   const needle = query.trim().toLocaleLowerCase("en-US");
   return books
     .filter((book) => {
       const linkedSeries = book.seriesId ? seriesMap.get(book.seriesId) : undefined;
       const tags = effectiveBookTags(book, linkedSeries);
+      const shelfMatches =
+        shelf === "all" ||
+        shelf === book.status ||
+        (shelf === "done" && (book.status === "finished" || book.status === "dnf"));
       const scopeMatches =
         scope === "all" ||
         (scope === "standalone" && !linkedSeries) ||
@@ -64,7 +70,7 @@ export function selectVisibleBooks(input: {
           .join(" ")
           .toLocaleLowerCase("en-US")
           .includes(needle);
-      return scopeMatches && tagMatches && searchMatches;
+      return shelfMatches && scopeMatches && tagMatches && searchMatches;
     })
     .sort((left, right) => {
       const leftSeries = left.seriesId ? seriesMap.get(left.seriesId)?.name ?? "" : "";

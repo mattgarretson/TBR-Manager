@@ -1,6 +1,7 @@
 import {
   cleanSeriesName,
   createBackup,
+  currentLocalDate,
   isCalendarDate,
   normalizeBookStatus,
   normalizeSourceUrl,
@@ -50,7 +51,12 @@ export class LibraryService {
     if (input.releaseDate && !isCalendarDate(input.releaseDate)) {
       throw new Error("Book release date must be a valid calendar date.");
     }
-    const finishedDate = input.finishedDate ?? existing?.finishedDate ?? "";
+    const currentTime = this.now();
+    const status = normalizeBookStatus(input.status ?? existing?.status);
+    const requestedFinishedDate = input.finishedDate ?? existing?.finishedDate ?? "";
+    const finishedDate = status === "finished" || status === "dnf"
+      ? requestedFinishedDate || currentLocalDate(currentTime)
+      : "";
     if (finishedDate && !isCalendarDate(finishedDate)) {
       throw new Error("Book finished date must be a valid calendar date.");
     }
@@ -60,7 +66,7 @@ export class LibraryService {
       throw new Error("Where I found it must be a valid HTTP or HTTPS URL.");
     }
 
-    const now = this.now().toISOString();
+    const now = currentTime.toISOString();
     let seriesId = input.seriesId;
     let seriesToCreate: Series | undefined;
     if (input.newSeries) {
@@ -104,7 +110,7 @@ export class LibraryService {
       seriesId: seriesId || null,
       seriesPosition: seriesId ? input.seriesPosition.trim() : "",
       releaseDate: input.releaseDate,
-      status: normalizeBookStatus(input.status ?? existing?.status),
+      status,
       finishedDate,
       sourceUrl,
       createdAt: existing?.createdAt ?? now,

@@ -6,7 +6,9 @@ import { selectTagCounts, selectVisibleBooks } from "../../lib/library/selectors
 import type {
   Book,
   BookScope,
+  BookShelf,
   BookSort,
+  BookStatus,
   Series,
   SortDirection,
 } from "../../lib/library/types";
@@ -16,21 +18,26 @@ export function LibraryView({
   books,
   series,
   loading,
+  saving,
   onAddBook,
   onEditBook,
+  onChangeBookStatus,
   onRemoveBook,
   onOpenSeries,
 }: {
   books: Book[];
   series: Series[];
   loading: boolean;
+  saving: boolean;
   onAddBook: () => void;
   onEditBook: (book: Book) => void;
+  onChangeBookStatus: (book: Book, status: BookStatus) => void;
   onRemoveBook: (book: Book) => void;
   onOpenSeries: (name: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState("All");
+  const [shelf, setShelf] = useState<BookShelf>("tbr");
   const [scope, setScope] = useState<BookScope>("all");
   const [sort, setSort] = useState<BookSort>("createdAt");
   const [direction, setDirection] = useState<SortDirection>("desc");
@@ -42,17 +49,21 @@ export function LibraryView({
       series,
       query,
       activeTag,
+      shelf,
       scope,
       sort,
       direction,
       today: currentLocalDate(),
     }),
-    [activeTag, books, direction, query, scope, series, sort],
+    [activeTag, books, direction, query, scope, series, shelf, sort],
   );
   const incompleteCount = series.filter((item) => item.status === "incomplete").length;
+  const unfinishedCount = books.filter((item) => item.status === "tbr" || item.status === "reading").length;
+  const finishedCount = books.filter((item) => item.status === "finished").length;
 
   function clearFilters() {
     setQuery("");
+    setShelf("tbr");
     setScope("all");
     setActiveTag("All");
   }
@@ -62,7 +73,8 @@ export function LibraryView({
       <div className="page-heading">
         <div><p className="eyebrow">On this device</p><h1 id="library-title">My TBR</h1></div>
         <div className="mini-stats" aria-label="Library summary">
-          <span><strong>{books.length}</strong> books</span>
+          <span><strong>{unfinishedCount}</strong> books</span>
+          <span><strong>{finishedCount}</strong> read</span>
           <span><strong>{series.length}</strong> series</span>
           <span><strong>{incompleteCount}</strong> waiting</span>
         </div>
@@ -90,6 +102,17 @@ export function LibraryView({
             <span aria-hidden="true">{direction === "asc" ? "↑" : "↓"}</span> {direction === "asc" ? "Asc" : "Desc"}
           </button>
         </div>
+      </div>
+
+      <div className="shelf-filter" aria-label="Choose a reading shelf">
+        {([
+          ["tbr", "To read"],
+          ["reading", "Reading"],
+          ["done", "Done"],
+          ["all", "All"],
+        ] as [BookShelf, string][]).map(([value, label]) => (
+          <button className={shelf === value ? "active" : ""} type="button" onClick={() => setShelf(value)} aria-pressed={shelf === value} key={value}>{label}</button>
+        ))}
       </div>
 
       <div className="filter-row" aria-label="Filter books">
@@ -142,6 +165,11 @@ export function LibraryView({
                       </button>
                     ) : <span className="standalone-badge">Standalone</span>}
                     {linkedSeries && <span className={`status-badge ${linkedSeries.status}`}>{linkedSeries.status === "complete" ? "Complete" : "Incomplete"}</span>}
+                    {book.status !== "tbr" && (
+                      <span className={`status-badge book-status-badge ${book.status}`}>
+                        {book.status === "reading" ? "Reading" : book.status === "finished" ? "Finished" : "Didn't finish"}
+                      </span>
+                    )}
                     {book.releaseDate && <time dateTime={book.releaseDate}>{book.releaseDate >= currentLocalDate() ? "Releases" : "Released"} {formatDate(book.releaseDate)}</time>}
                   </div>
                   {visibleTags.length > 0 && (
@@ -150,6 +178,17 @@ export function LibraryView({
                     </div>
                   )}
                   {book.reason && <div className="reason-note"><small>Why it made the list</small><p>{book.reason}</p></div>}
+                  {book.status === "tbr" && (
+                    <div className="book-status-actions">
+                      <button className="book-transition-button start" type="button" disabled={saving} onClick={() => onChangeBookStatus(book, "reading")}>Start reading</button>
+                    </div>
+                  )}
+                  {book.status === "reading" && (
+                    <div className="book-status-actions">
+                      <button className="book-transition-button finish" type="button" disabled={saving} onClick={() => onChangeBookStatus(book, "finished")}>Finished</button>
+                      <button className="book-transition-button dnf" type="button" disabled={saving} onClick={() => onChangeBookStatus(book, "dnf")}>Didn&apos;t finish</button>
+                    </div>
+                  )}
                   <button className="danger-link" type="button" onClick={() => onRemoveBook(book)}>Remove book</button>
                 </div>
               </article>

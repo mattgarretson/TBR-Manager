@@ -45,6 +45,7 @@ export type LibraryBackup = LibrarySnapshot & {
 
 export type ViewName = "library" | "series" | "settings";
 export type ThemeName = "bookshop" | "forest" | "ocean" | "lavender";
+export type BookShelf = "tbr" | "reading" | "done" | "all";
 export type BookScope = "all" | "standalone" | "incomplete" | "complete" | "upcoming";
 export type SeriesScope = "all" | "incomplete" | "complete" | "upcoming";
 export type SortDirection = "asc" | "desc";
