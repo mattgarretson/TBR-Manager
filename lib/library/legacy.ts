@@ -59,6 +59,9 @@ function mapLegacy(payload: LegacyPayload, now: string): LibrarySnapshot {
     seriesId: item.seriesId && seriesIds.has(item.seriesId) ? item.seriesId : null,
     seriesPosition: "",
     releaseDate: "",
+    status: "tbr",
+    finishedDate: "",
+    sourceUrl: "",
     createdAt: item.createdAt || now,
     updatedAt: item.updatedAt || now,
   }));

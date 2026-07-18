@@ -26,6 +26,9 @@ export const book: Book = {
   seriesId: series.id,
   seriesPosition: "1",
   releaseDate: "",
+  status: "tbr",
+  finishedDate: "",
+  sourceUrl: "",
   createdAt: timestamp,
   updatedAt: timestamp,
 };

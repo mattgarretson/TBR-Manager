@@ -1,5 +1,8 @@
 import type { Book, LibrarySnapshot, Series } from "./types";
 
+export const LAST_BACKUP_AT_META = "last-backup-at";
+export const BACKUP_NUDGE_SNOOZED_UNTIL_META = "backup-nudge-snoozed-until";
+
 export interface LibraryRepository {
   read(): Promise<LibrarySnapshot>;
   commitBook(book: Book, seriesToCreate?: Series): Promise<void>;

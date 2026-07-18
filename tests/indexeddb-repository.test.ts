@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   DATABASE_NAME,
+  DATABASE_VERSION,
   IndexedDbLibraryRepository,
 } from "../lib/library/indexeddb-repository";
+import {
+  BACKUP_NUDGE_SNOOZED_UNTIL_META,
+  LAST_BACKUP_AT_META,
+} from "../lib/library/repository";
 import { book, series, snapshot } from "./fixtures/library";
 import type { Series } from "../lib/library/types";
 
@@ -15,8 +20,37 @@ function deleteDatabase() {
   });
 }
 
+function putStoredBook(value: Record<string, unknown>) {
+  return new Promise<void>((resolve, reject) => {
+    const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const database = request.result;
+      const transaction = database.transaction("books", "readwrite");
+      transaction.objectStore("books").put(value);
+      transaction.oncomplete = () => {
+        database.close();
+        resolve();
+      };
+      transaction.onerror = () => {
+        database.close();
+        reject(transaction.error);
+      };
+      transaction.onabort = () => {
+        database.close();
+        reject(transaction.error);
+      };
+    };
+  });
+}
+
 describe("IndexedDbLibraryRepository", () => {
   beforeEach(deleteDatabase);
+
+  it("keeps the original database identity and schema version", () => {
+    expect(DATABASE_NAME).toBe("plot-pile-library");
+    expect(DATABASE_VERSION).toBe(1);
+  });
 
   it("commits a new series and book atomically", async () => {
     const repository = new IndexedDbLibraryRepository();
@@ -50,13 +84,29 @@ describe("IndexedDbLibraryRepository", () => {
     expect(result.books[0].tags).toEqual(["slow burn", "fantasy"]);
   });
 
+  it("normalizes new book fields when reading an existing version-one record", async () => {
+    const repository = new IndexedDbLibraryRepository();
+    await repository.replace({ books: [], series: [] });
+    const storedBook = { ...book } as Record<string, unknown>;
+    delete storedBook.status;
+    delete storedBook.finishedDate;
+    delete storedBook.sourceUrl;
+    await putStoredBook(storedBook);
+
+    expect((await repository.read()).books).toEqual([book]);
+  });
+
   it("replaces, idempotently merges, and stores metadata", async () => {
     const repository = new IndexedDbLibraryRepository();
     await repository.replace(snapshot);
     await repository.merge(snapshot);
     expect(await repository.read()).toEqual(snapshot);
-    await repository.writeMeta("migration", "complete");
-    expect(await repository.readMeta("migration")).toBe("complete");
+    expect(LAST_BACKUP_AT_META).toBe("last-backup-at");
+    expect(BACKUP_NUDGE_SNOOZED_UNTIL_META).toBe("backup-nudge-snoozed-until");
+    await repository.writeMeta(LAST_BACKUP_AT_META, "2027-01-01T12:00:00.000Z");
+    await repository.writeMeta(BACKUP_NUDGE_SNOOZED_UNTIL_META, "2027-01-08");
+    expect(await repository.readMeta(LAST_BACKUP_AT_META)).toBe("2027-01-01T12:00:00.000Z");
+    expect(await repository.readMeta(BACKUP_NUDGE_SNOOZED_UNTIL_META)).toBe("2027-01-08");
     await repository.replace({ books: [], series: [] });
     expect(await repository.read()).toEqual({ books: [], series: [] });
   });

@@ -1,4 +1,4 @@
-import type { Book, LibraryBackup, LibrarySnapshot, Series } from "./types";
+import type { Book, BookStatus, LibraryBackup, LibrarySnapshot, Series } from "./types";
 
 const APP_NAME = "Plot Pile" as const;
 const BACKUP_VERSION = 1 as const;
@@ -37,6 +37,21 @@ export function isCalendarDate(value: string): boolean {
   const [year, month, day] = value.split("-").map(Number);
   const candidate = new Date(year, month - 1, day);
   return candidate.getFullYear() === year && candidate.getMonth() === month - 1 && candidate.getDate() === day;
+}
+
+export function normalizeBookStatus(value: unknown): BookStatus {
+  return value === "reading" || value === "finished" || value === "dnf" ? value : "tbr";
+}
+
+export function normalizeSourceUrl(value: unknown): string {
+  const sourceUrl = typeof value === "string" ? value.trim() : "";
+  if (!sourceUrl) return "";
+  try {
+    const parsed = new URL(sourceUrl);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? sourceUrl : "";
+  } catch {
+    return "";
+  }
 }
 
 export function sortSeriesBooks(books: readonly Book[]): Book[] {
@@ -102,7 +117,12 @@ export function createBackup(
     app: APP_NAME,
     version: BACKUP_VERSION,
     exportedAt: now,
-    books: [...books],
+    books: books.map((book) => ({
+      ...book,
+      status: normalizeBookStatus(book.status),
+      finishedDate: typeof book.finishedDate === "string" ? book.finishedDate : "",
+      sourceUrl: normalizeSourceUrl(book.sourceUrl),
+    })),
     series: [...series],
   };
 }
@@ -180,6 +200,9 @@ export function parseBackup(value: unknown, now = new Date().toISOString()): Lib
       seriesId: seriesId && seriesIds.has(seriesId) ? seriesId : null,
       seriesPosition: requiredText(item.seriesPosition),
       releaseDate: validateOptionalDate(requiredText(item.releaseDate), "book release date"),
+      status: normalizeBookStatus(item.status),
+      finishedDate: validateOptionalDate(requiredText(item.finishedDate), "book finished date"),
+      sourceUrl: normalizeSourceUrl(item.sourceUrl),
       createdAt: requiredText(item.createdAt, now),
       updatedAt: requiredText(item.updatedAt, now),
     };

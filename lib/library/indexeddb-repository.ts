@@ -1,6 +1,6 @@
 import type { LibraryRepository } from "./repository";
 import type { Book, LibrarySnapshot, Series } from "./types";
-import { normalizeTags } from "./model";
+import { normalizeBookStatus, normalizeSourceUrl, normalizeTags } from "./model";
 
 export const DATABASE_NAME = "plot-pile-library";
 export const DATABASE_VERSION = 1;
@@ -9,6 +9,11 @@ const SERIES_STORE = "series";
 const META_STORE = "meta";
 
 type MetaRecord = { key: string; value: string };
+type StoredBook = Omit<Book, "status" | "finishedDate" | "sourceUrl"> & {
+  status?: unknown;
+  finishedDate?: unknown;
+  sourceUrl?: unknown;
+};
 
 function requestValue<T>(request: IDBRequest<T>) {
   return new Promise<T>((resolve, reject) => {
@@ -55,10 +60,16 @@ export class IndexedDbLibraryRepository implements LibraryRepository {
     try {
       const transaction = database.transaction([BOOKS_STORE, SERIES_STORE], "readonly");
       const completed = transactionDone(transaction);
-      const booksRequest = transaction.objectStore(BOOKS_STORE).getAll() as IDBRequest<Book[]>;
+      const booksRequest = transaction.objectStore(BOOKS_STORE).getAll() as IDBRequest<StoredBook[]>;
       const seriesRequest = transaction.objectStore(SERIES_STORE).getAll() as IDBRequest<Series[]>;
-      const [books, storedSeries] = await Promise.all([requestValue(booksRequest), requestValue(seriesRequest)]);
+      const [storedBooks, storedSeries] = await Promise.all([requestValue(booksRequest), requestValue(seriesRequest)]);
       await completed;
+      const books: Book[] = storedBooks.map((item) => ({
+        ...item,
+        status: normalizeBookStatus(item.status),
+        finishedDate: typeof item.finishedDate === "string" ? item.finishedDate : "",
+        sourceUrl: normalizeSourceUrl(item.sourceUrl),
+      }));
       const series = storedSeries.map((item) => {
         const linkedAuthors = [
           ...new Set(

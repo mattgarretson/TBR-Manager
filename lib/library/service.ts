@@ -1,4 +1,13 @@
-import { cleanSeriesName, createBackup, isCalendarDate, normalizeTags, parseBackup, seriesNameKey } from "./model";
+import {
+  cleanSeriesName,
+  createBackup,
+  isCalendarDate,
+  normalizeBookStatus,
+  normalizeSourceUrl,
+  normalizeTags,
+  parseBackup,
+  seriesNameKey,
+} from "./model";
 import type { LibraryRepository } from "./repository";
 import type {
   Book,
@@ -40,6 +49,15 @@ export class LibraryService {
     if (!title || !author) throw new Error("Add both a title and an author.");
     if (input.releaseDate && !isCalendarDate(input.releaseDate)) {
       throw new Error("Book release date must be a valid calendar date.");
+    }
+    const finishedDate = input.finishedDate ?? existing?.finishedDate ?? "";
+    if (finishedDate && !isCalendarDate(finishedDate)) {
+      throw new Error("Book finished date must be a valid calendar date.");
+    }
+    const requestedSourceUrl = input.sourceUrl ?? existing?.sourceUrl ?? "";
+    const sourceUrl = normalizeSourceUrl(requestedSourceUrl);
+    if (requestedSourceUrl.trim() && !sourceUrl) {
+      throw new Error("Where I found it must be a valid HTTP or HTTPS URL.");
     }
 
     const now = this.now().toISOString();
@@ -86,6 +104,9 @@ export class LibraryService {
       seriesId: seriesId || null,
       seriesPosition: seriesId ? input.seriesPosition.trim() : "",
       releaseDate: input.releaseDate,
+      status: normalizeBookStatus(input.status ?? existing?.status),
+      finishedDate,
+      sourceUrl,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
@@ -145,6 +166,9 @@ export class LibraryService {
         seriesId,
         seriesPosition,
         releaseDate: "",
+        status: "tbr",
+        finishedDate: "",
+        sourceUrl: "",
         createdAt: now,
         updatedAt: now,
       };

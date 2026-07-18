@@ -13,6 +13,7 @@ import {
 } from "../lib/library/model";
 import { book, series, snapshot, timestamp } from "./fixtures/library";
 import backupV1 from "./fixtures/backup-v1.json";
+import type { BookStatus } from "../lib/library/types";
 
 describe("library domain model", () => {
   it("normalizes unlimited tags with a locale-stable key", () => {
@@ -70,6 +71,55 @@ describe("library domain model", () => {
       ...snapshot,
       series: [{ ...series, tags: [] }],
     });
+  });
+
+  it("defaults missing and unrecognized backup book fields", () => {
+    const backup = createBackup(snapshot.books, snapshot.series, timestamp);
+    const legacyBook = { ...book } as Record<string, unknown>;
+    delete legacyBook.status;
+    delete legacyBook.finishedDate;
+    delete legacyBook.sourceUrl;
+
+    expect(parseBackup({ ...backup, books: [legacyBook] }, timestamp).books[0]).toMatchObject({
+      status: "tbr",
+      finishedDate: "",
+      sourceUrl: "",
+    });
+    expect(parseBackup({
+      ...backup,
+      books: [{ ...book, status: "paused", sourceUrl: "javascript:alert(1)" }],
+    }, timestamp).books[0]).toMatchObject({
+      status: "tbr",
+      sourceUrl: "",
+    });
+  });
+
+  it("validates finished dates with the optional calendar-date rule", () => {
+    const backup = createBackup(snapshot.books, snapshot.series, timestamp);
+    expect(parseBackup({
+      ...backup,
+      books: [{ ...book, status: "finished", finishedDate: "2028-02-29" }],
+    }, timestamp).books[0].finishedDate).toBe("2028-02-29");
+    expect(() => parseBackup({
+      ...backup,
+      books: [{ ...book, status: "finished", finishedDate: "2027-02-29" }],
+    }, timestamp)).toThrow("invalid book finished date");
+  });
+
+  it("round-trips every book status in backup version one", () => {
+    const statuses: BookStatus[] = ["tbr", "reading", "finished", "dnf"];
+    const books = statuses.map((status, index) => ({
+      ...book,
+      id: `book-${index}`,
+      status,
+      finishedDate: status === "finished" || status === "dnf" ? "2027-03-04" : "",
+      sourceUrl: `https://example.com/books/${index}`,
+    }));
+
+    const backup = createBackup(books, snapshot.series, timestamp);
+    expect(backup.version).toBe(1);
+    expect(backup.books).toEqual(books);
+    expect(parseBackup(backup, timestamp).books).toEqual(books);
   });
 
   it("rejects duplicates and invalid calendar dates while unlinking orphaned books", () => {

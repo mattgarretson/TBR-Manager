@@ -1,4 +1,5 @@
 export type SeriesStatus = "complete" | "incomplete";
+export type BookStatus = "tbr" | "reading" | "finished" | "dnf";
 
 export type Series = {
   id: string;
@@ -24,6 +25,9 @@ export type Book = {
   seriesId: string | null;
   seriesPosition: string;
   releaseDate: string;
+  status: BookStatus;
+  finishedDate: string;
+  sourceUrl: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -71,6 +75,9 @@ export type SaveBookInput = {
   seriesId: string | null;
   seriesPosition: string;
   releaseDate: string;
+  status?: BookStatus;
+  finishedDate?: string;
+  sourceUrl?: string;
   newSeries?: NewSeriesInput;
 };
 
