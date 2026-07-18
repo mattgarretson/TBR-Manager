@@ -11,6 +11,7 @@ import {
   parseBackup,
   renameTag,
   seriesNameKey,
+  shouldShowBackupNudge,
   sortSeriesBooks,
 } from "../lib/library/model";
 import { book, series, snapshot, timestamp } from "./fixtures/library";
@@ -160,5 +161,33 @@ describe("library domain model", () => {
     expect(isCalendarDate("2028-02-29")).toBe(true);
     expect(isCalendarDate("2027-02-29")).toBe(false);
     expect(isCalendarDate("")).toBe(false);
+  });
+
+  it("shows the backup nudge only for a large library with a stale unsnoozed backup", () => {
+    const now = new Date("2027-01-01T12:00:00.000Z");
+    expect(shouldShowBackupNudge({
+      bookCount: 4,
+      lastBackupAt: null,
+      snoozedUntil: null,
+      now,
+    })).toBe(false);
+    expect(shouldShowBackupNudge({
+      bookCount: 5,
+      lastBackupAt: "2026-12-15T12:00:00.000Z",
+      snoozedUntil: null,
+      now,
+    })).toBe(false);
+    expect(shouldShowBackupNudge({
+      bookCount: 5,
+      lastBackupAt: "2026-11-01T12:00:00.000Z",
+      snoozedUntil: null,
+      now,
+    })).toBe(true);
+    expect(shouldShowBackupNudge({
+      bookCount: 5,
+      lastBackupAt: null,
+      snoozedUntil: "2027-01-08",
+      now,
+    })).toBe(false);
   });
 });

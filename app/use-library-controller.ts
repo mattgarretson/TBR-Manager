@@ -36,6 +36,8 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
   const [notice, setNotice] = useState("");
   const [pendingBookRemoval, setPendingBookRemoval] = useState<Book | null>(null);
   const [pendingLegacyCovers, setPendingLegacyCovers] = useState(0);
+  const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
+  const [backupNudgeSnoozedUntil, setBackupNudgeSnoozedUntil] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -51,9 +53,14 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
         } catch (caught) {
           if (active) setError(caught instanceof Error ? caught.message : "Your old shelf could not be copied yet.");
         }
-        const nextSnapshot = await service.read();
+        const [nextSnapshot, backupMetadata] = await Promise.all([
+          service.read(),
+          service.readBackupMetadata(),
+        ]);
         if (!active) return;
         setSnapshot(nextSnapshot);
+        setLastBackupAt(backupMetadata.lastBackupAt);
+        setBackupNudgeSnoozedUntil(backupMetadata.snoozedUntil);
         if (migrationNotice) setNotice(migrationNotice);
       } catch (caught) {
         if (active) setError(caught instanceof Error ? caught.message : "Could not open the on-device library.");
@@ -147,7 +154,7 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     setNotice("Tag removed everywhere");
   }
 
-  function downloadBackup() {
+  async function downloadBackup() {
     try {
       const backup = service.createBackup(snapshot);
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
@@ -157,10 +164,16 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
       link.download = `plot-pile-backup-${currentLocalDate()}.json`;
       link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setLastBackupAt(await service.recordBackupDownload());
       setNotice("Backup downloaded");
     } catch (caught) {
       setError(libraryErrorMessage(caught, "This backup could not be prepared on this device."));
     }
+  }
+
+  async function dismissBackupNudge() {
+    const snoozedUntil = await command(() => service.snoozeBackupNudge());
+    setBackupNudgeSnoozedUntil(snoozedUntil);
   }
 
   async function restoreBackup(value: unknown) {
@@ -183,6 +196,12 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     notice,
     pendingBookRemoval,
     pendingLegacyCovers,
+    lastBackupAt,
+    showBackupNudge: service.shouldShowBackupNudge(
+      snapshot.books.length,
+      lastBackupAt,
+      backupNudgeSnoozedUntil,
+    ),
     setError,
     showNotice: setNotice,
     dismissError: () => setError(""),
@@ -194,6 +213,7 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     renameTag,
     deleteTag,
     downloadBackup,
+    dismissBackupNudge,
     restoreBackup,
     erase,
   };

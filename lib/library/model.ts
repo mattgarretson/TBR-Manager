@@ -60,6 +60,33 @@ export function currentLocalDate(date = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
+export function addLocalDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+export function shouldShowBackupNudge({
+  bookCount,
+  lastBackupAt,
+  snoozedUntil,
+  now = new Date(),
+}: {
+  bookCount: number;
+  lastBackupAt: string | null;
+  snoozedUntil: string | null;
+  now?: Date;
+}): boolean {
+  if (bookCount < 5) return false;
+  if (snoozedUntil && isCalendarDate(snoozedUntil) && snoozedUntil >= currentLocalDate(now)) {
+    return false;
+  }
+  if (!lastBackupAt) return true;
+  const lastBackupTime = Date.parse(lastBackupAt);
+  if (!Number.isFinite(lastBackupTime)) return true;
+  return lastBackupTime < now.getTime() - 30 * 24 * 60 * 60 * 1000;
+}
+
 export function isCalendarDate(value: string): boolean {
   if (!DATE_PATTERN.test(value)) return false;
   const [year, month, day] = value.split("-").map(Number);

@@ -24,6 +24,9 @@ export function LibraryView({
   onChangeBookStatus,
   onRemoveBook,
   onOpenSeries,
+  showBackupNudge,
+  onOpenSettings,
+  onDismissBackupNudge,
 }: {
   books: Book[];
   series: Series[];
@@ -34,6 +37,9 @@ export function LibraryView({
   onChangeBookStatus: (book: Book, status: BookStatus) => void;
   onRemoveBook: (book: Book) => void;
   onOpenSeries: (name: string) => void;
+  showBackupNudge: boolean;
+  onOpenSettings: () => void;
+  onDismissBackupNudge: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState("All");
@@ -79,6 +85,16 @@ export function LibraryView({
           <span><strong>{incompleteCount}</strong> waiting</span>
         </div>
       </div>
+
+      {showBackupNudge && (
+        <aside className="backup-nudge" aria-label="Backup reminder">
+          <button type="button" onClick={onOpenSettings}>
+            <strong>It’s been a while since your last backup</strong>
+            <span>Open More to download a fresh copy.</span>
+          </button>
+          <button className="backup-nudge-dismiss" type="button" onClick={onDismissBackupNudge} aria-label="Dismiss backup reminder">×</button>
+        </aside>
+      )}
 
       <div className="library-tools">
         <label className="search-field">

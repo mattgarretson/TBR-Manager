@@ -141,6 +141,9 @@ export function PlotPileApp({
             setSeriesFocus(name);
             changeView("series");
           }}
+          showBackupNudge={library.showBackupNudge}
+          onOpenSettings={() => changeView("settings")}
+          onDismissBackupNudge={() => void library.dismissBackupNudge()}
         />
       )}
       {view === "series" && (
@@ -160,8 +163,9 @@ export function PlotPileApp({
           series={series}
           pendingLegacyCovers={library.pendingLegacyCovers}
           saving={library.saving}
+          lastBackupAt={library.lastBackupAt}
           device={device}
-          onDownload={library.downloadBackup}
+          onDownload={() => void library.downloadBackup()}
           onImport={(event) => void importBackup(event)}
           onErase={() => void eraseLibrary()}
           onRenameTag={library.renameTag}

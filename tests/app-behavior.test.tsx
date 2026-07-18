@@ -5,7 +5,7 @@ import { PlotPileApp } from "../app/page";
 import type { CoverSearchClient } from "../components/library/cover-search";
 import { LibraryService } from "../lib/library/service";
 import { MemoryLibraryRepository } from "./helpers/memory-repository";
-import { snapshot, timestamp } from "./fixtures/library";
+import { book, snapshot, timestamp } from "./fixtures/library";
 
 function renderApp(initial = snapshot, coverClient?: CoverSearchClient, bookRemovalUndoMs?: number) {
   const repository = new MemoryLibraryRepository(initial);
@@ -44,6 +44,39 @@ describe("Plot Pile behavior", () => {
     expect(screen.getByRole("button", { name: /^Bookshop/ }).getAttribute("aria-pressed")).toBe("true");
     await user.click(screen.getByRole("button", { name: /^Forest/ }));
     expect(document.documentElement.dataset.theme).toBe("forest");
+  });
+
+  it("shows the backup nudge for stale metadata, hides fresh or snoozed states, and records dismissal", async () => {
+    const manyBooks = {
+      ...snapshot,
+      books: Array.from({ length: 5 }, (_, index) => ({
+        ...book,
+        id: `book-${index + 1}`,
+        title: `Book ${index + 1}`,
+      })),
+    };
+
+    const freshRepository = new MemoryLibraryRepository(manyBooks);
+    freshRepository.metadata.set("last-backup-at", "2026-12-15T12:00:00.000Z");
+    const freshApp = renderAppWithRepository(freshRepository);
+    await screen.findByRole("heading", { name: "My TBR" });
+    expect(screen.queryByText("It’s been a while since your last backup")).toBeNull();
+    freshApp.unmount();
+
+    const staleRepository = new MemoryLibraryRepository(manyBooks);
+    staleRepository.metadata.set("last-backup-at", "2026-11-01T12:00:00.000Z");
+    const staleApp = renderAppWithRepository(staleRepository);
+    expect(await screen.findByText("It’s been a while since your last backup")).toBeTruthy();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Dismiss backup reminder" }));
+    await waitFor(() => expect(staleRepository.metadata.get("backup-nudge-snoozed-until")).toBe("2027-01-08"));
+    staleApp.unmount();
+
+    const snoozedRepository = new MemoryLibraryRepository(manyBooks);
+    snoozedRepository.metadata.set("last-backup-at", "2026-11-01T12:00:00.000Z");
+    snoozedRepository.metadata.set("backup-nudge-snoozed-until", "2027-01-08");
+    renderAppWithRepository(snoozedRepository);
+    await screen.findByRole("heading", { name: "My TBR" });
+    expect(screen.queryByText("It’s been a while since your last backup")).toBeNull();
   });
 
   it("filters books by tag and clears the active filter", async () => {

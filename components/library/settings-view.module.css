@@ -67,6 +67,7 @@
 .tagRow form label { flex: 1 1 170px; }
 .tagRow input { width: 100%; min-height: 36px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; }
 .emptyTags { margin-bottom: 0 !important; }
+.lastBackup { margin: -6px 0 12px !important; color: var(--ink) !important; font-weight: 750; }
 
 @media (min-width: 700px) {
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }

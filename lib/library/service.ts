@@ -1,4 +1,5 @@
 import {
+  addLocalDays,
   cleanSeriesName,
   createBackup,
   currentLocalDate,
@@ -10,8 +11,13 @@ import {
   removeTag,
   renameTag as renameStoredTag,
   seriesNameKey,
+  shouldShowBackupNudge,
 } from "./model";
-import type { LibraryRepository } from "./repository";
+import {
+  BACKUP_NUDGE_SNOOZED_UNTIL_META,
+  LAST_BACKUP_AT_META,
+  type LibraryRepository,
+} from "./repository";
 import type {
   Book,
   LibraryBackup,
@@ -231,6 +237,30 @@ export class LibraryService {
   async deleteSeries(id: string) {
     await this.repository.deleteSeries(id, this.now().toISOString());
     return this.repository.read();
+  }
+
+  async readBackupMetadata() {
+    const [lastBackupAt, snoozedUntil] = await Promise.all([
+      this.repository.readMeta(LAST_BACKUP_AT_META),
+      this.repository.readMeta(BACKUP_NUDGE_SNOOZED_UNTIL_META),
+    ]);
+    return { lastBackupAt, snoozedUntil };
+  }
+
+  async recordBackupDownload() {
+    const lastBackupAt = this.now().toISOString();
+    await this.repository.writeMeta(LAST_BACKUP_AT_META, lastBackupAt);
+    return lastBackupAt;
+  }
+
+  async snoozeBackupNudge() {
+    const snoozedUntil = currentLocalDate(addLocalDays(this.now(), 7));
+    await this.repository.writeMeta(BACKUP_NUDGE_SNOOZED_UNTIL_META, snoozedUntil);
+    return snoozedUntil;
+  }
+
+  shouldShowBackupNudge(bookCount: number, lastBackupAt: string | null, snoozedUntil: string | null) {
+    return shouldShowBackupNudge({ bookCount, lastBackupAt, snoozedUntil, now: this.now() });
   }
 
   createBackup(snapshot: LibrarySnapshot): LibraryBackup {

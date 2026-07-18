@@ -23,6 +23,7 @@ export function SettingsView({
   series,
   pendingLegacyCovers,
   saving,
+  lastBackupAt,
   device,
   onDownload,
   onImport,
@@ -34,6 +35,7 @@ export function SettingsView({
   series: Series[];
   pendingLegacyCovers: number;
   saving: boolean;
+  lastBackupAt: string | null;
   device: DeviceSettings;
   onDownload: () => void;
   onImport: (event: ChangeEvent<HTMLInputElement>) => void;
@@ -44,6 +46,13 @@ export function SettingsView({
   const tagCounts = useMemo(() => selectStoredTagCounts(books, series), [books, series]);
   const [editingTag, setEditingTag] = useState("");
   const [renameValue, setRenameValue] = useState("");
+  const lastBackupLabel = lastBackupAt
+    ? new Date(lastBackupAt).toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+    : "";
 
   async function submitRename(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -123,7 +132,7 @@ export function SettingsView({
         </article>
         <article className={`settings-card ${styles.card}`}>
           <span className={`settings-icon ${styles.icon}`} aria-hidden="true">⇩</span>
-          <div><p className="eyebrow">Backup</p><h2>Download a copy</h2><p>The backup includes books, series, notes, tags, dates, and uploaded covers.</p><button className="secondary-button" type="button" onClick={onDownload}>Download backup</button></div>
+          <div><p className="eyebrow">Backup</p><h2>Download a copy</h2><p>The backup includes books, series, notes, tags, dates, and uploaded covers.</p><p className={styles.lastBackup}>{lastBackupLabel ? `Last backup: ${lastBackupLabel}` : "No backup yet"}</p><button className="secondary-button" type="button" onClick={onDownload}>Download backup</button></div>
         </article>
         <article className={`settings-card ${styles.card}`}>
           <span className={`settings-icon ${styles.icon}`} aria-hidden="true">⇧</span>

@@ -353,6 +353,33 @@ h1,
   gap: 10px;
 }
 
+.backup-nudge {
+  margin-bottom: 13px;
+  padding: 10px 11px 10px 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, var(--warning-text) 22%, transparent);
+  border-radius: 12px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.backup-nudge > button:first-child {
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.backup-nudge strong,
+.backup-nudge span { display: block; }
+.backup-nudge strong { font-size: 0.7rem; }
+.backup-nudge span { margin-top: 2px; font-size: 0.59rem; }
+.backup-nudge-dismiss { padding: 5px 8px; border: 0; background: transparent; color: inherit; font-size: 1rem; }
+
 .shelf-filter {
   margin-top: 14px;
   padding: 3px;
