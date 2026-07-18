@@ -192,6 +192,7 @@ export function LibraryView({
                       </span>
                     )}
                     {book.releaseDate && <time dateTime={book.releaseDate}>{book.releaseDate >= currentLocalDate() ? "Releases" : "Released"} {formatDate(book.releaseDate)}</time>}
+                    {book.sourceUrl && <a className="source-link" href={book.sourceUrl} target="_blank" rel="noreferrer" aria-label={`Open where ${book.title} was found`}>Source ↗</a>}
                   </div>
                   {visibleTags.length > 0 && (
                     <div className="book-tags" aria-label="Tropes and tags">

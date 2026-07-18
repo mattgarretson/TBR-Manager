@@ -16,6 +16,7 @@ import type {
   Series,
   SeriesStatus,
 } from "../../lib/library/types";
+import type { SharedBookDraft } from "../../lib/share/parse";
 import { DialogShell } from "./dialog-shell";
 import { CoverSearch, type CoverSearchClient } from "./cover-search";
 import { TagSuggestions } from "./tag-suggestions";
@@ -34,6 +35,7 @@ type BookDraft = {
   releaseDate: string;
   status: BookStatus;
   finishedDate: string;
+  sourceUrl: string;
   newSeriesName: string;
   newSeriesStatus: SeriesStatus;
   newSeriesNextTitle: string;
@@ -43,13 +45,14 @@ type BookDraft = {
 function initialDraft(
   book: Book | undefined,
   preselectedSeriesId: string,
+  prefill: SharedBookDraft | undefined,
   series: readonly Series[],
   books: readonly Book[],
 ): BookDraft {
   const selectedSeries = series.find((item) => item.id === preselectedSeriesId);
   return {
-    title: book?.title ?? "",
-    author: book?.author ?? selectedSeries?.author ?? "",
+    title: book?.title ?? prefill?.title ?? "",
+    author: book?.author ?? prefill?.author ?? selectedSeries?.author ?? "",
     reason: book?.reason ?? "",
     tags: book?.tags ?? [],
     coverImage: book?.coverImage ?? "",
@@ -58,6 +61,7 @@ function initialDraft(
     releaseDate: book?.releaseDate ?? "",
     status: book?.status ?? "tbr",
     finishedDate: book?.finishedDate ?? "",
+    sourceUrl: book?.sourceUrl ?? prefill?.sourceUrl ?? "",
     newSeriesName: "",
     newSeriesStatus: "incomplete",
     newSeriesNextTitle: "",
@@ -68,6 +72,7 @@ function initialDraft(
 export function BookEditor({
   book,
   preselectedSeriesId,
+  prefill,
   books,
   series,
   saving,
@@ -81,6 +86,7 @@ export function BookEditor({
 }: {
   book?: Book;
   preselectedSeriesId?: string;
+  prefill?: SharedBookDraft;
   books: Book[];
   series: Series[];
   saving: boolean;
@@ -92,7 +98,7 @@ export function BookEditor({
   onSave: (input: SaveBookInput) => Promise<{ snapshot: LibrarySnapshot }>;
   onClose: () => void;
 }) {
-  const [draft, setDraft] = useState(() => initialDraft(book, preselectedSeriesId ?? "", series, books));
+  const [draft, setDraft] = useState(() => initialDraft(book, preselectedSeriesId ?? "", prefill, series, books));
   const [tagInput, setTagInput] = useState("");
   const [dirty, setDirty] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState<{ book: Book; keepOpen: boolean } | null>(null);
@@ -177,6 +183,7 @@ export function BookEditor({
       releaseDate: draft.releaseDate,
       status: draft.status,
       finishedDate: draft.finishedDate,
+      sourceUrl: draft.sourceUrl,
       newSeries: draft.seriesId === NEW_SERIES_VALUE ? {
         name: draft.newSeriesName,
         author: draft.author,
@@ -215,7 +222,7 @@ export function BookEditor({
         )?.id ?? "";
       }
       setTagInput("");
-      setDraft(initialDraft(undefined, nextSeriesId, result.snapshot.series, result.snapshot.books));
+      setDraft(initialDraft(undefined, nextSeriesId, undefined, result.snapshot.series, result.snapshot.books));
     } catch {
       // The controller provides the visible error.
     }
@@ -234,6 +241,13 @@ export function BookEditor({
         <div className="field-row">
           <label className="form-field"><span>Book title</span><input autoFocus required value={draft.title} onChange={(event) => updateDraft({ title: event.target.value })} /></label>
           <label className="form-field"><span>Author</span><input required value={draft.author} onChange={(event) => updateDraft({ author: event.target.value })} /></label>
+        </div>
+        <div className="form-field source-url-field">
+          <div className="label-row">
+            <label htmlFor="book-source-url">Where I found it <small>Optional</small></label>
+            {/^https?:\/\//i.test(draft.sourceUrl.trim()) && <a href={draft.sourceUrl.trim()} target="_blank" rel="noreferrer">Open link ↗</a>}
+          </div>
+          <input id="book-source-url" aria-label="Where I found it" type="url" value={draft.sourceUrl} onChange={(event) => updateDraft({ sourceUrl: event.target.value })} placeholder="https://…" />
         </div>
         <div className="field-row">
           <label className="form-field"><span>Series</span><select value={draft.seriesId} onChange={(event) => changeSeries(event.target.value)}><option value="">Standalone book</option>{[...series].sort((a, b) => a.name.localeCompare(b.name)).map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}<option value={NEW_SERIES_VALUE}>＋ Create a new series</option></select></label>

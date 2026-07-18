@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { BookEditor } from "../components/library/book-editor";
 import type { CoverSearchClient } from "../components/library/cover-search";
 import { LibraryView } from "../components/library/library-view";
@@ -9,11 +9,23 @@ import { SeriesView } from "../components/library/series-view";
 import { SettingsView } from "../components/library/settings-view";
 import type { Book, BookStatus, Series, ViewName } from "../lib/library/types";
 import { selectStoredTagCounts } from "../lib/library/selectors";
+import { parseSharedBook, type SharedBookDraft } from "../lib/share/parse";
 import { useDeviceSettings } from "./use-device-settings";
 import { useLibraryController, type LibraryControllerDependencies } from "./use-library-controller";
 
-type BookEditorState = { book?: Book; preselectedSeriesId?: string };
+type BookEditorState = { book?: Book; preselectedSeriesId?: string; prefill?: SharedBookDraft };
 type SeriesEditorState = { series?: Series };
+
+function sharedDraftFromLocation(): SharedBookDraft | null {
+  if (typeof window === "undefined") return null;
+  const location = new URL(window.location.href);
+  if (!["title", "text", "url"].some((key) => location.searchParams.has(key))) return null;
+  return parseSharedBook({
+    title: location.searchParams.get("title"),
+    text: location.searchParams.get("text"),
+    url: location.searchParams.get("url"),
+  });
+}
 
 export function PlotPileApp({
   controllerDependencies = {},
@@ -33,6 +45,24 @@ export function PlotPileApp({
   const [seriesFocus, setSeriesFocus] = useState("");
   const [bookEditor, setBookEditor] = useState<BookEditorState | null>(null);
   const [seriesEditor, setSeriesEditor] = useState<SeriesEditorState | null>(null);
+  const [pendingShare, setPendingShare] = useState<SharedBookDraft | null>(sharedDraftFromLocation);
+
+  useEffect(() => {
+    if (!pendingShare) return;
+    const location = new URL(window.location.href);
+    location.searchParams.delete("title");
+    location.searchParams.delete("text");
+    location.searchParams.delete("url");
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${location.pathname}${location.search}${location.hash}`,
+    );
+  }, [pendingShare]);
+
+  const activeBookEditor = bookEditor ?? (!library.loading && pendingShare
+    ? { prefill: pendingShare }
+    : null);
 
   function changeView(nextView: ViewName) {
     setView(nextView);
@@ -123,7 +153,7 @@ export function PlotPileApp({
         <button className="primary-button desktop-add" type="button" onClick={() => openNewBook()}><span aria-hidden="true">＋</span> Add book</button>
       </header>
 
-      {library.error && !bookEditor && !seriesEditor && (
+      {library.error && !activeBookEditor && !seriesEditor && (
         <div className="global-error" role="alert"><span>{library.error}</span><button type="button" onClick={library.dismissError}>Dismiss</button></div>
       )}
 
@@ -175,11 +205,12 @@ export function PlotPileApp({
 
       <button className="mobile-fab" type="button" onClick={() => openNewBook()} aria-label="Add a book">＋</button>
 
-      {bookEditor && (
+      {activeBookEditor && (
         <BookEditor
-          key={bookEditor.book?.id ?? `new-${bookEditor.preselectedSeriesId ?? "standalone"}`}
-          book={bookEditor.book}
-          preselectedSeriesId={bookEditor.preselectedSeriesId}
+          key={activeBookEditor.book?.id ?? activeBookEditor.prefill?.sourceUrl ?? `new-${activeBookEditor.preselectedSeriesId ?? "standalone"}`}
+          book={activeBookEditor.book}
+          preselectedSeriesId={activeBookEditor.preselectedSeriesId}
+          prefill={activeBookEditor.prefill}
           books={books}
           series={series}
           saving={library.saving}
@@ -189,7 +220,10 @@ export function PlotPileApp({
           coverClient={coverClient}
           tagSuggestions={tagSuggestions}
           onSave={library.saveBook}
-          onClose={() => setBookEditor(null)}
+          onClose={() => {
+            setBookEditor(null);
+            setPendingShare(null);
+          }}
         />
       )}
       {seriesEditor && (

@@ -660,7 +660,8 @@ h1,
 .series-link,
 .standalone-badge,
 .status-badge,
-.book-meta time {
+.book-meta time,
+.source-link {
   min-height: 23px;
   padding: 0 7px;
   border-radius: 6px;
@@ -679,6 +680,7 @@ h1,
 .status-badge.finished { background: var(--success-bg); color: var(--success-text); }
 .status-badge.dnf { background: #eee5e1; color: #77564d; }
 .book-meta time { border: 1px solid var(--line); color: var(--muted); }
+.source-link { border: 1px solid var(--line); color: var(--berry); text-decoration: none; }
 
 .book-tags {
   margin-top: 11px;
@@ -1114,12 +1116,14 @@ h1,
 }
 
 .form-field > span,
-.label-row > span {
+.label-row > span,
+.label-row > label {
   font-size: 0.68rem;
   font-weight: 820;
 }
 
-.form-field span small { margin-left: 4px; color: var(--muted); font-size: 0.56rem; font-weight: 650; }
+.form-field span small,
+.form-field label small { margin-left: 4px; color: var(--muted); font-size: 0.56rem; font-weight: 650; }
 .form-field input,
 .form-field select { height: 46px; padding: 0 12px; }
 .form-field textarea { min-height: 92px; padding: 11px 12px; line-height: 1.5; resize: vertical; }
@@ -1128,6 +1132,9 @@ h1,
 .tag-entry input::placeholder { color: #a3958d; }
 
 .compact-field { max-width: 330px; }
+
+.source-url-field .label-row { align-items: center; }
+.source-url-field a { color: var(--berry); font-size: 0.61rem; font-weight: 800; text-decoration: none; }
 
 .series-author-hint {
   margin: -8px 0 16px;

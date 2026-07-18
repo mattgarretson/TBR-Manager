@@ -7,6 +7,11 @@ describe("PWA contract", () => {
   it("publishes an installable manifest", async () => {
     const manifest = JSON.parse(await readFile(path.resolve(process.cwd(), "public/manifest.webmanifest"), "utf8"));
     expect(manifest).toMatchObject({ name: "Plot Pile", display: "standalone", start_url: "/" });
+    expect(manifest.share_target).toEqual({
+      action: "/",
+      method: "GET",
+      params: { title: "title", text: "text", url: "url" },
+    });
     expect(manifest.icons).toEqual(expect.arrayContaining([
       expect.objectContaining({ sizes: "512x512", purpose: "maskable" }),
     ]));

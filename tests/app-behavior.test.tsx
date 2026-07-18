@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { PlotPileApp } from "../app/page";
@@ -37,6 +37,45 @@ function renderAppWithRepository(
 }
 
 describe("Plot Pile behavior", () => {
+  it("opens a shared book after loading and strips the launch parameters", async () => {
+    const user = userEvent.setup();
+    const repository = new MemoryLibraryRepository({ books: [], series: [] });
+    const service = new LibraryService(repository, {
+      now: () => new Date(timestamp),
+      createId: () => "shared-book",
+    });
+    let finishMigration: ((value: { importedBooks: number; localizedCovers: number; pendingCovers: number }) => void) | undefined;
+    const migrate = vi.fn(() => new Promise<{ importedBooks: number; localizedCovers: number; pendingCovers: number }>((resolve) => {
+      finishMigration = resolve;
+    }));
+    const params = new URLSearchParams({
+      title: "A Psalm for the Wild-Built by Becky Chambers | Goodreads",
+      url: "https://www.goodreads.com/book/show/40864002-a-psalm-for-the-wild-built",
+    });
+    window.history.pushState({}, "", `/?${params}`);
+
+    render(<PlotPileApp controllerDependencies={{ repository, service, migrate }} />);
+
+    await waitFor(() => expect(window.location.search).toBe(""));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await act(async () => {
+      finishMigration?.({ importedBooks: 0, localizedCovers: 0, pendingCovers: 0 });
+    });
+
+    expect((await screen.findByRole("textbox", { name: "Book title" }) as HTMLInputElement).value)
+      .toBe("A Psalm for the Wild-Built");
+    expect((screen.getByRole("textbox", { name: "Author" }) as HTMLInputElement).value)
+      .toBe("Becky Chambers");
+    expect((screen.getByRole("textbox", { name: "Where I found it" }) as HTMLInputElement).value)
+      .toBe("https://www.goodreads.com/book/show/40864002-a-psalm-for-the-wild-built");
+    expect(window.location.search).toBe("");
+
+    await user.click(screen.getByRole("button", { name: "Add to my TBR" }));
+    await waitFor(() => expect(repository.snapshot.books[0].sourceUrl)
+      .toBe("https://www.goodreads.com/book/show/40864002-a-psalm-for-the-wild-built"));
+    expect(screen.getByRole("link", { name: "Open where A Psalm for the Wild-Built was found" })).toBeTruthy();
+  });
+
   it("navigates between the complete mobile information architecture", async () => {
     const user = userEvent.setup();
     renderApp();
