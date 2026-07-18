@@ -2,6 +2,7 @@
 
 import { useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import {
+  findDuplicateBook,
   MAX_COVER_FILE_BYTES,
   nextSeriesPosition,
   normalizeTags,
@@ -91,6 +92,7 @@ export function BookEditor({
   const [draft, setDraft] = useState(() => initialDraft(book, preselectedSeriesId ?? "", series, books));
   const [tagInput, setTagInput] = useState("");
   const [dirty, setDirty] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState<{ book: Book; keepOpen: boolean } | null>(null);
   const selectedSeries = draft.seriesId && draft.seriesId !== NEW_SERIES_VALUE
     ? series.find((item) => item.id === draft.seriesId)
     : undefined;
@@ -99,6 +101,7 @@ export function BookEditor({
 
   function updateDraft(patch: Partial<BookDraft>) {
     setDraft((current) => ({ ...current, ...patch }));
+    if ("title" in patch || "author" in patch) setDuplicateWarning(null);
     setDirty(true);
   }
 
@@ -182,8 +185,19 @@ export function BookEditor({
     };
   }
 
-  async function persist(keepOpen: boolean) {
+  async function persist(keepOpen: boolean, saveDuplicate = false) {
+    const identityChanged = !book
+      || draft.title.trim() !== book.title.trim()
+      || draft.author.trim() !== book.author.trim();
+    const duplicate = identityChanged
+      ? findDuplicateBook(books, { id: book?.id, title: draft.title, author: draft.author })
+      : undefined;
+    if (duplicate && !saveDuplicate) {
+      setDuplicateWarning({ book: duplicate, keepOpen });
+      return;
+    }
     clearError();
+    setDuplicateWarning(null);
     try {
       const result = await onSave(saveInput());
       setDirty(false);
@@ -265,6 +279,15 @@ export function BookEditor({
         </details>
 
         {error && <p className="form-error" role="alert">{error}</p>}
+        {duplicateWarning && (
+          <div className="duplicate-warning" role="alert">
+            <p><strong>Possible duplicate</strong> This already matches “{duplicateWarning.book.title}” by {duplicateWarning.book.author}.</p>
+            <div>
+              <button className="secondary-button" type="button" onClick={() => void persist(duplicateWarning.keepOpen, true)}>Save anyway</button>
+              <button className="cancel-button" type="button" onClick={() => setDuplicateWarning(null)}>Go back and edit</button>
+            </div>
+          </div>
+        )}
         <div className="dialog-actions"><button className="cancel-button" type="button" onClick={requestClose}>Cancel</button>{!book && <button className="secondary-button save-another-button" type="button" disabled={saving} onClick={() => void persist(true)}>Save & add another</button>}<button className="primary-button" type="submit" disabled={saving}>{saving ? "Saving…" : book ? "Save changes" : "Add to my TBR"}</button></div>
       </form>
     </DialogShell>

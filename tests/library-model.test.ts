@@ -3,6 +3,7 @@ import {
   createBackup,
   currentLocalDate,
   effectiveBookTags,
+  findDuplicateBook,
   isCalendarDate,
   nextSeriesRelease,
   nextSeriesPosition,
@@ -26,6 +27,22 @@ describe("library domain model", () => {
   it("uses a stable case-insensitive series key", () => {
     expect(seriesNameKey("  The   Night Court  ")).toBe("the night court");
     expect(seriesNameKey("THE NIGHT COURT")).toBe("the night court");
+  });
+
+  it("matches duplicate books by trimmed title and author while excluding the edited book", () => {
+    expect(findDuplicateBook([book], {
+      title: "  BOOK ONE  ",
+      author: " a. writer ",
+    })).toBe(book);
+    expect(findDuplicateBook([book], {
+      id: book.id,
+      title: "Book One",
+      author: "A. Writer",
+    })).toBeUndefined();
+    expect(findDuplicateBook([book], {
+      title: "Book One",
+      author: "Another Writer",
+    })).toBeUndefined();
   });
 
   it("combines book-specific and inherited series tags without duplicates", () => {

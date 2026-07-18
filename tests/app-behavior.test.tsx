@@ -103,6 +103,22 @@ describe("Plot Pile behavior", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("warns about a matching title and author but allows an explicit duplicate save", async () => {
+    const user = userEvent.setup();
+    const { repository } = renderApp();
+    await screen.findByText("Book One");
+    await user.click(screen.getByRole("button", { name: "Add book" }));
+    await user.type(screen.getByRole("textbox", { name: "Book title" }), " book one ");
+    await user.type(screen.getByRole("textbox", { name: "Author" }), "A. WRITER");
+    await user.click(screen.getByRole("button", { name: "Add to my TBR" }));
+
+    expect(await screen.findByText(/already matches “Book One”/)).toBeTruthy();
+    expect(repository.snapshot.books).toHaveLength(1);
+
+    await user.click(screen.getByRole("button", { name: "Save anyway" }));
+    await waitFor(() => expect(repository.snapshot.books).toHaveLength(2));
+  });
+
   it("finds, localizes, previews, and saves a cover from an injected online client", async () => {
     const user = userEvent.setup();
     const coverClient: CoverSearchClient = {

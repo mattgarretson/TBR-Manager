@@ -1291,6 +1291,20 @@ h1,
   font-size: 0.68rem;
 }
 
+.duplicate-warning {
+  margin: 12px 0 0;
+  padding: 11px;
+  border: 1px solid color-mix(in srgb, var(--warning-text) 24%, transparent);
+  border-radius: 8px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: 0.68rem;
+}
+
+.duplicate-warning p { margin: 0; }
+.duplicate-warning strong { display: block; margin-bottom: 3px; }
+.duplicate-warning > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
 .dialog-actions {
   position: sticky;
   bottom: -17px;

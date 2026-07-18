@@ -25,6 +25,20 @@ export function seriesNameKey(value: unknown): string {
   return cleanSeriesName(value).normalize("NFKC").toLocaleLowerCase("en-US");
 }
 
+export function findDuplicateBook(
+  books: readonly Book[],
+  candidate: { id?: string; title: string; author: string },
+): Book | undefined {
+  const title = candidate.title.trim().toLocaleLowerCase("en-US");
+  const author = candidate.author.trim().toLocaleLowerCase("en-US");
+  if (!title || !author) return undefined;
+  return books.find((book) =>
+    book.id !== candidate.id
+    && book.title.trim().toLocaleLowerCase("en-US") === title
+    && book.author.trim().toLocaleLowerCase("en-US") === author,
+  );
+}
+
 export function currentLocalDate(date = new Date()): string {
   const year = String(date.getFullYear()).padStart(4, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
