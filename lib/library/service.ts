@@ -189,6 +189,11 @@ export class LibraryService {
     return this.repository.read();
   }
 
+  async restoreBook(book: Book) {
+    await this.repository.commitBook(book);
+    return this.repository.read();
+  }
+
   async deleteSeries(id: string) {
     await this.repository.deleteSeries(id, this.now().toISOString());
     return this.repository.read();

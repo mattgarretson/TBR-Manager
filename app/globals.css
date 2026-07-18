@@ -1343,6 +1343,26 @@ h1,
   animation: toast-in 180ms ease-out;
 }
 
+.undo-toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  text-align: left;
+}
+
+.undo-toast button {
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: white;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.undo-toast button:disabled { opacity: 0.55; }
+
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
 
 @media (min-width: 700px) {

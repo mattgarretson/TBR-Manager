@@ -5,7 +5,7 @@ import { IndexedDbLibraryRepository } from "../lib/library/indexeddb-repository"
 import { migrateLegacyLibrary } from "../lib/library/legacy";
 import type { LibraryRepository } from "../lib/library/repository";
 import { LibraryService } from "../lib/library/service";
-import type { LibrarySnapshot, SaveBookInput, SaveSeriesInput } from "../lib/library/types";
+import type { Book, LibrarySnapshot, SaveBookInput, SaveSeriesInput } from "../lib/library/types";
 import { currentLocalDate } from "../lib/library/model";
 import { libraryErrorMessage } from "../lib/library/errors";
 
@@ -15,6 +15,7 @@ export type LibraryControllerDependencies = {
   repository?: LibraryRepository;
   service?: LibraryService;
   migrate?: typeof migrateLegacyLibrary;
+  bookRemovalUndoMs?: number;
 };
 
 export function useLibraryController(dependencies: LibraryControllerDependencies = {}) {
@@ -27,11 +28,13 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     [dependencies.service, repository],
   );
   const migrate = dependencies.migrate ?? migrateLegacyLibrary;
+  const bookRemovalUndoMs = dependencies.bookRemovalUndoMs ?? 6_000;
   const [snapshot, setSnapshot] = useState<LibrarySnapshot>(emptySnapshot);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [pendingBookRemoval, setPendingBookRemoval] = useState<Book | null>(null);
   const [pendingLegacyCovers, setPendingLegacyCovers] = useState(0);
 
   useEffect(() => {
@@ -70,6 +73,12 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
+  useEffect(() => {
+    if (!pendingBookRemoval) return;
+    const timeout = window.setTimeout(() => setPendingBookRemoval(null), bookRemovalUndoMs);
+    return () => window.clearTimeout(timeout);
+  }, [bookRemovalUndoMs, pendingBookRemoval]);
+
   async function command<T>(action: () => Promise<T>) {
     setSaving(true);
     setError("");
@@ -103,9 +112,21 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
   }
 
   async function deleteBook(id: string) {
+    const removedBook = snapshot.books.find((book) => book.id === id);
+    if (!removedBook) return;
     const nextSnapshot = await command(() => service.deleteBook(id));
     setSnapshot(nextSnapshot);
-    setNotice("Book removed");
+    setNotice("");
+    setPendingBookRemoval(removedBook);
+  }
+
+  async function undoBookRemoval() {
+    const removedBook = pendingBookRemoval;
+    if (!removedBook) return;
+    const nextSnapshot = await command(() => service.restoreBook(removedBook));
+    setSnapshot(nextSnapshot);
+    setPendingBookRemoval(null);
+    setNotice("Book restored");
   }
 
   async function deleteSeries(id: string) {
@@ -148,6 +169,7 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     saving,
     error,
     notice,
+    pendingBookRemoval,
     pendingLegacyCovers,
     setError,
     showNotice: setNotice,
@@ -155,6 +177,7 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     saveBook,
     saveSeries,
     deleteBook,
+    undoBookRemoval,
     deleteSeries,
     downloadBackup,
     restoreBackup,

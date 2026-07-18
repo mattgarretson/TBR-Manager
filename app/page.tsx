@@ -57,7 +57,6 @@ export function PlotPileApp({
   }
 
   async function removeBook(book: Book) {
-    if (!window.confirm(`Remove “${book.title}” from this device?`)) return;
     try {
       await library.deleteBook(book.id);
     } catch {}
@@ -195,7 +194,12 @@ export function PlotPileApp({
         />
       )}
 
-      {library.notice && <div className="toast" role="status">✓ {library.notice}</div>}
+      {library.pendingBookRemoval ? (
+        <div className="toast undo-toast" role="status">
+          <span>Removed “{library.pendingBookRemoval.title}”</span>
+          <button type="button" disabled={library.saving} onClick={() => void library.undoBookRemoval()}>Undo</button>
+        </div>
+      ) : library.notice && <div className="toast" role="status">✓ {library.notice}</div>}
     </main>
   );
 }

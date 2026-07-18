@@ -7,16 +7,29 @@ import { LibraryService } from "../lib/library/service";
 import { MemoryLibraryRepository } from "./helpers/memory-repository";
 import { snapshot, timestamp } from "./fixtures/library";
 
-function renderApp(initial = snapshot, coverClient?: CoverSearchClient) {
+function renderApp(initial = snapshot, coverClient?: CoverSearchClient, bookRemovalUndoMs?: number) {
   const repository = new MemoryLibraryRepository(initial);
+  return renderAppWithRepository(repository, coverClient, bookRemovalUndoMs);
+}
+
+function renderAppWithRepository(
+  repository: MemoryLibraryRepository,
+  coverClient?: CoverSearchClient,
+  bookRemovalUndoMs?: number,
+) {
   let generatedId = 0;
   const service = new LibraryService(repository, {
     now: () => new Date(timestamp),
     createId: () => `created-id-${generatedId++}`,
   });
   const migrate = vi.fn().mockResolvedValue({ importedBooks: 0, localizedCovers: 0, pendingCovers: 0 });
-  render(<PlotPileApp controllerDependencies={{ repository, service, migrate }} coverClient={coverClient} />);
-  return { repository, service, migrate };
+  const rendered = render(
+    <PlotPileApp
+      controllerDependencies={{ repository, service, migrate, bookRemovalUndoMs }}
+      coverClient={coverClient}
+    />,
+  );
+  return { repository, service, migrate, ...rendered };
 }
 
 describe("Plot Pile behavior", () => {
@@ -117,6 +130,35 @@ describe("Plot Pile behavior", () => {
 
     await user.click(screen.getByRole("button", { name: "Save anyway" }));
     await waitFor(() => expect(repository.snapshot.books).toHaveLength(2));
+  });
+
+  it("removes a book immediately and restores the exact record from the undo toast", async () => {
+    const user = userEvent.setup();
+    const confirm = vi.spyOn(window, "confirm");
+    const { repository } = renderApp();
+    await screen.findByText("Book One");
+
+    await user.click(screen.getByRole("button", { name: "Remove book" }));
+    await waitFor(() => expect(repository.snapshot.books).toEqual([]));
+    expect(confirm).not.toHaveBeenCalled();
+    expect(screen.getByText(/Removed “Book One”/)).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(repository.snapshot.books).toEqual(snapshot.books));
+  });
+
+  it("expires the undo and keeps the removed book absent after a reload", async () => {
+    const user = userEvent.setup();
+    const { repository, unmount } = renderApp(snapshot, undefined, 1);
+    await screen.findByText("Book One");
+    await user.click(screen.getByRole("button", { name: "Remove book" }));
+    await waitFor(() => expect(repository.snapshot.books).toEqual([]));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Undo" })).toBeNull());
+
+    unmount();
+    renderAppWithRepository(repository);
+    expect(await screen.findByRole("heading", { name: "My TBR" })).toBeTruthy();
+    expect(screen.queryByText("Book One")).toBeNull();
   });
 
   it("finds, localizes, previews, and saves a cover from an injected online client", async () => {
