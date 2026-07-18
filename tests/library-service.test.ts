@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { LibraryService } from "../lib/library/service";
 import { MemoryLibraryRepository } from "./helpers/memory-repository";
 import { book, series, snapshot, timestamp } from "./fixtures/library";
@@ -91,28 +91,110 @@ describe("LibraryService", () => {
     expect(repository.snapshot.books[0]).toMatchObject({ seriesId: null, tags: ["slow burn", "fantasy"] });
   });
 
-  it("renames and deletes raw tags across books and series", async () => {
+  it("renames only affected records and bumps their updated timestamps", async () => {
+    const unaffectedBook = {
+      ...book,
+      id: "book-unaffected",
+      title: "Romance Book",
+      tags: ["romance"],
+      seriesId: null,
+    };
+    const unaffectedSeries = {
+      ...series,
+      id: "series-unaffected",
+      name: "Romance Series",
+      nameKey: "romance series",
+      tags: ["romance"],
+    };
     const repository = new MemoryLibraryRepository({
-      books: [{ ...book, tags: ["slow burn", "fantasy"] }],
-      series: [{ ...series, tags: ["fantasy"] }],
+      books: [{ ...book, tags: ["slow burn", "fantasy"] }, unaffectedBook],
+      series: [{ ...series, tags: ["fantasy"] }, unaffectedSeries],
     });
+    const saveBooksAndSeries = vi.spyOn(repository, "saveBooksAndSeries");
     const service = new LibraryService(repository, {
       now: () => new Date("2028-01-01T00:00:00.000Z"),
     });
 
     await service.renameTag("fantasy", "slow burn");
-    expect(repository.snapshot.books[0]).toMatchObject({
+
+    const renamedBook = repository.snapshot.books.find((item) => item.id === book.id);
+    const renamedSeries = repository.snapshot.series.find((item) => item.id === series.id);
+    expect(renamedBook).toMatchObject({
       tags: ["slow burn"],
       updatedAt: "2028-01-01T00:00:00.000Z",
     });
-    expect(repository.snapshot.series[0]).toMatchObject({
+    expect(renamedSeries).toMatchObject({
       tags: ["slow burn"],
       updatedAt: "2028-01-01T00:00:00.000Z",
+    });
+    expect(repository.snapshot.books.find((item) => item.id === unaffectedBook.id)).toEqual(unaffectedBook);
+    expect(repository.snapshot.series.find((item) => item.id === unaffectedSeries.id)).toEqual(unaffectedSeries);
+    expect(saveBooksAndSeries).toHaveBeenCalledOnce();
+    expect(saveBooksAndSeries.mock.calls[0][0].map((item) => item.id)).toEqual([book.id]);
+    expect(saveBooksAndSeries.mock.calls[0][1].map((item) => item.id)).toEqual([series.id]);
+  });
+
+  it("deletes a tag from every book and series that stores it", async () => {
+    const secondBook = {
+      ...book,
+      id: "book-2",
+      title: "Book Two",
+      tags: ["fantasy"],
+      seriesId: null,
+    };
+    const unaffectedBook = {
+      ...book,
+      id: "book-unaffected",
+      title: "Romance Book",
+      tags: ["romance"],
+      seriesId: null,
+    };
+    const secondSeries = {
+      ...series,
+      id: "series-2",
+      name: "Another Saga",
+      nameKey: "another saga",
+      tags: ["fantasy", "epic"],
+    };
+    const unaffectedSeries = {
+      ...series,
+      id: "series-unaffected",
+      name: "Romance Series",
+      nameKey: "romance series",
+      tags: ["romance"],
+    };
+    const repository = new MemoryLibraryRepository({
+      books: [{ ...book, tags: ["slow burn", "fantasy"] }, secondBook, unaffectedBook],
+      series: [{ ...series, tags: ["fantasy"] }, secondSeries, unaffectedSeries],
+    });
+    const saveBooksAndSeries = vi.spyOn(repository, "saveBooksAndSeries");
+    const service = new LibraryService(repository, {
+      now: () => new Date("2028-01-01T00:00:00.000Z"),
     });
 
-    await service.deleteTag("slow burn");
-    expect(repository.snapshot.books[0].tags).toEqual([]);
-    expect(repository.snapshot.series[0].tags).toEqual([]);
+    await service.deleteTag(" #FaNtAsY ");
+
+    expect(repository.snapshot.books.find((item) => item.id === book.id)).toMatchObject({
+      tags: ["slow burn"],
+      updatedAt: "2028-01-01T00:00:00.000Z",
+    });
+    expect(repository.snapshot.books.find((item) => item.id === secondBook.id)).toMatchObject({
+      tags: [],
+      updatedAt: "2028-01-01T00:00:00.000Z",
+    });
+    expect(repository.snapshot.series.find((item) => item.id === series.id)).toMatchObject({
+      tags: [],
+      updatedAt: "2028-01-01T00:00:00.000Z",
+    });
+    expect(repository.snapshot.series.find((item) => item.id === secondSeries.id)).toMatchObject({
+      tags: ["epic"],
+      updatedAt: "2028-01-01T00:00:00.000Z",
+    });
+    expect(repository.snapshot.books.find((item) => item.id === unaffectedBook.id)).toEqual(unaffectedBook);
+    expect(repository.snapshot.series.find((item) => item.id === unaffectedSeries.id)).toEqual(unaffectedSeries);
+    expect(saveBooksAndSeries).toHaveBeenCalledOnce();
+    expect(saveBooksAndSeries.mock.calls[0][0]).toHaveLength(2);
+    expect(saveBooksAndSeries.mock.calls[0][1]).toHaveLength(2);
   });
 
   it("preserves contract fields when an existing editor input omits them", async () => {

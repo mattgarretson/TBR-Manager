@@ -9,6 +9,7 @@ import {
   nextSeriesPosition,
   normalizeTags,
   parseBackup,
+  removeTag,
   renameTag,
   seriesNameKey,
   shouldShowBackupNudge,
@@ -26,9 +27,19 @@ describe("library domain model", () => {
     expect(normalizeTags(tags)).toHaveLength(40);
   });
 
-  it("renames a tag through normalization and merges an existing target", () => {
-    expect(renameTag(["Fantasy", "slow burn"], " #FANTASY ", " Slow Burn "))
+  it("renames through normalized tag names and merges an existing target without duplicates", () => {
+    expect(renameTag(["Fantasy", " slow burn ", "#SLOW BURN"], " #FaNtAsY ", " #Slow Burn "))
       .toEqual(["slow burn"]);
+  });
+
+  it("removes normalized tag names and treats empty rename or remove inputs as no-ops", () => {
+    const tags = ["Fantasy", " slow burn ", "#FANTASY"];
+    const normalized = ["fantasy", "slow burn"];
+
+    expect(removeTag(tags, " #FaNtAsY ")).toEqual(["slow burn"]);
+    expect(renameTag(tags, "", "mystery")).toEqual(normalized);
+    expect(renameTag(tags, "fantasy", " # ")).toEqual(normalized);
+    expect(removeTag(tags, "  # ")).toEqual(normalized);
   });
 
   it("uses a stable case-insensitive series key", () => {

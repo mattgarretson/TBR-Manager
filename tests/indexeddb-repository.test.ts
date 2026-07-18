@@ -67,6 +67,48 @@ describe("IndexedDbLibraryRepository", () => {
     expect(result.books).toEqual(expect.arrayContaining([book, secondBook]));
   });
 
+  it("updates the given books and series while leaving unrelated stored records untouched", async () => {
+    const repository = new IndexedDbLibraryRepository();
+    const unrelatedSeries = {
+      ...series,
+      id: "series-unrelated",
+      name: "Another Saga",
+      nameKey: "another saga",
+      tags: ["romance"],
+    };
+    const unrelatedBook = {
+      ...book,
+      id: "book-unrelated",
+      title: "Another Book",
+      tags: ["romance"],
+      seriesId: unrelatedSeries.id,
+    };
+    await repository.replace({
+      books: [book, unrelatedBook],
+      series: [series, unrelatedSeries],
+    });
+    const updatedBook = {
+      ...book,
+      tags: ["slow burn", "fantasy"],
+      updatedAt: "2028-01-01T00:00:00.000Z",
+    };
+    const updatedSeries = {
+      ...series,
+      tags: ["epic fantasy"],
+      updatedAt: "2028-01-01T00:00:00.000Z",
+    };
+
+    await repository.saveBooksAndSeries([updatedBook], [updatedSeries]);
+
+    const result = await repository.read();
+    expect(result.books).toHaveLength(2);
+    expect(result.series).toHaveLength(2);
+    expect(result.books.find((item) => item.id === updatedBook.id)).toEqual(updatedBook);
+    expect(result.series.find((item) => item.id === updatedSeries.id)).toEqual(updatedSeries);
+    expect(result.books.find((item) => item.id === unrelatedBook.id)).toEqual(unrelatedBook);
+    expect(result.series.find((item) => item.id === unrelatedSeries.id)).toEqual(unrelatedSeries);
+  });
+
   it("updates book and series records together and rolls back the bulk transaction on failure", async () => {
     const repository = new IndexedDbLibraryRepository();
     await repository.replace(snapshot);

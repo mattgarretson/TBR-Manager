@@ -238,6 +238,31 @@ describe("Plot Pile behavior", () => {
     expect(repository.snapshot.books.find((item) => item.title === "Another Book")?.tags).toEqual(["fantasy"]);
   });
 
+  it("renames and deletes stored tags from Settings through the confirmation flow", async () => {
+    const user = userEvent.setup();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const { repository } = renderApp({
+      ...snapshot,
+      books: [{ ...book, tags: ["slow burn", "fantasy"] }],
+    });
+    await screen.findByText("Book One");
+    await user.click(screen.getByRole("button", { name: "More" }));
+
+    await user.click(screen.getByRole("button", { name: "Rename slow burn" }));
+    const tagName = screen.getByRole("textbox", { name: "New name for slow burn" });
+    await user.clear(tagName);
+    await user.type(tagName, " #FANTASY ");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(repository.snapshot.books[0].tags).toEqual(["fantasy"]));
+    await user.click(screen.getByRole("button", { name: "Delete fantasy" }));
+
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(confirm.mock.calls[0][0]).toContain("fantasy");
+    await waitFor(() => expect(repository.snapshot.books[0].tags).toEqual([]));
+    expect(repository.snapshot.series[0].tags).toEqual([]);
+  });
+
   it("edits a book through the controller and validates required fields", async () => {
     const user = userEvent.setup();
     const { repository } = renderApp();
