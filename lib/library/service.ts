@@ -7,6 +7,8 @@ import {
   normalizeSourceUrl,
   normalizeTags,
   parseBackup,
+  removeTag,
+  renameTag as renameStoredTag,
   seriesNameKey,
 } from "./model";
 import type { LibraryRepository } from "./repository";
@@ -191,6 +193,38 @@ export class LibraryService {
 
   async restoreBook(book: Book) {
     await this.repository.commitBook(book);
+    return this.repository.read();
+  }
+
+  async renameTag(currentTag: string, nextTag: string) {
+    const source = normalizeTags([currentTag])[0];
+    const target = normalizeTags([nextTag])[0];
+    if (!source || !target) throw new Error("Enter a tag name.");
+    const snapshot = await this.repository.read();
+    if (source === target) return snapshot;
+    const updatedAt = this.now().toISOString();
+    const books = snapshot.books
+      .filter((book) => normalizeTags(book.tags).includes(source))
+      .map((book) => ({ ...book, tags: renameStoredTag(book.tags, source, target), updatedAt }));
+    const series = snapshot.series
+      .filter((item) => normalizeTags(item.tags).includes(source))
+      .map((item) => ({ ...item, tags: renameStoredTag(item.tags, source, target), updatedAt }));
+    await this.repository.saveBooksAndSeries(books, series);
+    return this.repository.read();
+  }
+
+  async deleteTag(tag: string) {
+    const target = normalizeTags([tag])[0];
+    if (!target) throw new Error("Choose a tag to delete.");
+    const snapshot = await this.repository.read();
+    const updatedAt = this.now().toISOString();
+    const books = snapshot.books
+      .filter((book) => normalizeTags(book.tags).includes(target))
+      .map((book) => ({ ...book, tags: removeTag(book.tags, target), updatedAt }));
+    const series = snapshot.series
+      .filter((item) => normalizeTags(item.tags).includes(target))
+      .map((item) => ({ ...item, tags: removeTag(item.tags, target), updatedAt }));
+    await this.repository.saveBooksAndSeries(books, series);
     return this.repository.read();
   }
 

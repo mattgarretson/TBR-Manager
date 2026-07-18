@@ -9,6 +9,7 @@ import type {
   SeriesStatus,
 } from "../../lib/library/types";
 import { DialogShell } from "./dialog-shell";
+import { TagSuggestions } from "./tag-suggestions";
 
 type BatchMode = "none" | "numbered" | "individual";
 type BatchRow = SaveSeriesBookInput & { key: string };
@@ -49,6 +50,7 @@ export function SeriesEditor({
   error,
   setError,
   clearError,
+  tagSuggestions,
   onSave,
   onDelete,
   onClose,
@@ -59,6 +61,7 @@ export function SeriesEditor({
   error: string;
   setError: (message: string) => void;
   clearError: () => void;
+  tagSuggestions: string[];
   onSave: (input: SaveSeriesInput) => Promise<unknown>;
   onDelete: (series: Series, linkedBookCount: number) => Promise<void>;
   onClose: () => void;
@@ -170,7 +173,7 @@ export function SeriesEditor({
           <label className="form-field"><span>Series author</span><input value={draft.author} onChange={(event) => update({ author: event.target.value })} placeholder="Used for new books" /></label>
         </div>
         <p className="field-hint series-author-hint">New books inherit this author. You can still change an individual book when needed.</p>
-        <div className="form-field"><div className="label-row"><span>Series tags</span><small>Inherited by every linked book</small></div><div className="tag-entry">{draft.tags.map((tag) => <button type="button" onClick={() => update({ tags: draft.tags.filter((item) => item !== tag) })} aria-label={`Remove ${tag}`} key={tag}>{tag} <span>×</span></button>)}<input aria-label="Add series tags" value={tagInput} onChange={(event) => { setTagInput(event.target.value); setDirty(true); }} onKeyDown={handleTagKeyDown} onBlur={() => addTags(tagInput)} placeholder={draft.tags.length ? "Add another…" : "fantasy, progression…"} /></div><small className="field-hint">Add a tag once here and it appears on every book in the series.</small></div>
+        <div className="form-field"><div className="label-row"><span>Series tags</span><small>Inherited by every linked book</small></div><div className="tag-entry">{draft.tags.map((tag) => <button type="button" onClick={() => update({ tags: draft.tags.filter((item) => item !== tag) })} aria-label={`Remove ${tag}`} key={tag}>{tag} <span>×</span></button>)}<input aria-label="Add series tags" value={tagInput} onChange={(event) => { setTagInput(event.target.value); setDirty(true); }} onKeyDown={handleTagKeyDown} onBlur={() => addTags(tagInput)} placeholder={draft.tags.length ? "Add another…" : "fantasy, progression…"} /></div><TagSuggestions input={tagInput} tags={tagSuggestions} selected={draft.tags} onPick={addTags} /><small className="field-hint">Add a tag once here and it appears on every book in the series.</small></div>
         <label className="form-field"><span>Publishing status</span><select value={draft.status} onChange={(event) => update({ status: event.target.value as SeriesStatus, nextReleaseTitle: event.target.value === "complete" ? "" : draft.nextReleaseTitle, nextReleaseDate: event.target.value === "complete" ? "" : draft.nextReleaseDate })}><option value="incomplete">Ongoing</option><option value="complete">Finished publishing</option></select></label>
         {draft.status === "incomplete" && <div className="field-row"><label className="form-field"><span>Next book title <small>Optional</small></span><input value={draft.nextReleaseTitle} onChange={(event) => update({ nextReleaseTitle: event.target.value })} /></label><label className="form-field"><span>Next release date <small>Optional</small></span><input type="date" value={draft.nextReleaseDate} onChange={(event) => update({ nextReleaseDate: event.target.value })} /></label></div>}
 

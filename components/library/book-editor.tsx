@@ -18,6 +18,7 @@ import type {
 } from "../../lib/library/types";
 import { DialogShell } from "./dialog-shell";
 import { CoverSearch, type CoverSearchClient } from "./cover-search";
+import { TagSuggestions } from "./tag-suggestions";
 import { coverTone, readImage } from "./view-utils";
 
 const NEW_SERIES_VALUE = "__new_series__";
@@ -74,6 +75,7 @@ export function BookEditor({
   setError,
   clearError,
   coverClient,
+  tagSuggestions,
   onSave,
   onClose,
 }: {
@@ -86,6 +88,7 @@ export function BookEditor({
   setError: (message: string) => void;
   clearError: () => void;
   coverClient?: CoverSearchClient;
+  tagSuggestions: string[];
   onSave: (input: SaveBookInput) => Promise<{ snapshot: LibrarySnapshot }>;
   onClose: () => void;
 }) {
@@ -274,7 +277,7 @@ export function BookEditor({
             </div>
             <label className="form-field"><span>Why did you want to read it? <small>Optional</small></span><textarea value={draft.reason} onChange={(event) => updateDraft({ reason: event.target.value })} rows={4} placeholder="What sold you on it?" /></label>
             {inheritedTags.length > 0 && <div className="inherited-series-tags"><small>From {selectedSeries?.name}</small><div>{inheritedTags.map((tag) => <span key={tag}>{tag}</span>)}</div></div>}
-            <div className="form-field"><div className="label-row"><span>Book-specific tags</span><small>No limit</small></div><div className="tag-entry">{bookSpecificTags.map((tag) => <button type="button" onClick={() => updateDraft({ tags: draft.tags.filter((item) => item !== tag) })} aria-label={`Remove ${tag}`} key={tag}>{tag} <span>×</span></button>)}<input aria-label="Add book-specific tags" value={tagInput} onChange={(event) => { setTagInput(event.target.value); setDirty(true); }} onKeyDown={handleTagKeyDown} onBlur={() => addTags(tagInput)} placeholder={bookSpecificTags.length ? "Add another…" : "slow burn, found family…"} /></div><small className="field-hint">These apply only to this book. Series tags appear above automatically.</small></div>
+            <div className="form-field"><div className="label-row"><span>Book-specific tags</span><small>No limit</small></div><div className="tag-entry">{bookSpecificTags.map((tag) => <button type="button" onClick={() => updateDraft({ tags: draft.tags.filter((item) => item !== tag) })} aria-label={`Remove ${tag}`} key={tag}>{tag} <span>×</span></button>)}<input aria-label="Add book-specific tags" value={tagInput} onChange={(event) => { setTagInput(event.target.value); setDirty(true); }} onKeyDown={handleTagKeyDown} onBlur={() => addTags(tagInput)} placeholder={bookSpecificTags.length ? "Add another…" : "slow burn, found family…"} /></div><TagSuggestions input={tagInput} tags={tagSuggestions} selected={[...draft.tags, ...inheritedTags]} onPick={addTags} /><small className="field-hint">These apply only to this book. Series tags appear above automatically.</small></div>
           </div>
         </details>
 

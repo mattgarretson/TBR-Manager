@@ -67,6 +67,23 @@ describe("IndexedDbLibraryRepository", () => {
     expect(result.books).toEqual(expect.arrayContaining([book, secondBook]));
   });
 
+  it("updates book and series records together and rolls back the bulk transaction on failure", async () => {
+    const repository = new IndexedDbLibraryRepository();
+    await repository.replace(snapshot);
+    const updatedBook = { ...book, tags: ["fantasy"], updatedAt: "2028-01-01T00:00:00.000Z" };
+    const updatedSeries = { ...series, tags: ["fantasy", "epic"], updatedAt: "2028-01-01T00:00:00.000Z" };
+
+    await repository.saveBooksAndSeries([updatedBook], [updatedSeries]);
+    expect(await repository.read()).toEqual({ books: [updatedBook], series: [updatedSeries] });
+
+    const invalidSeries = { ...updatedSeries, id: undefined } as unknown as Series;
+    await expect(repository.saveBooksAndSeries(
+      [{ ...updatedBook, title: "This must roll back" }],
+      [invalidSeries],
+    )).rejects.toBeTruthy();
+    expect(await repository.read()).toEqual({ books: [updatedBook], series: [updatedSeries] });
+  });
+
   it("rolls back the book when the companion series is invalid", async () => {
     const repository = new IndexedDbLibraryRepository();
     const invalidSeries = { ...series, id: undefined } as unknown as Series;

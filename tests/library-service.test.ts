@@ -91,6 +91,30 @@ describe("LibraryService", () => {
     expect(repository.snapshot.books[0]).toMatchObject({ seriesId: null, tags: ["slow burn", "fantasy"] });
   });
 
+  it("renames and deletes raw tags across books and series", async () => {
+    const repository = new MemoryLibraryRepository({
+      books: [{ ...book, tags: ["slow burn", "fantasy"] }],
+      series: [{ ...series, tags: ["fantasy"] }],
+    });
+    const service = new LibraryService(repository, {
+      now: () => new Date("2028-01-01T00:00:00.000Z"),
+    });
+
+    await service.renameTag("fantasy", "slow burn");
+    expect(repository.snapshot.books[0]).toMatchObject({
+      tags: ["slow burn"],
+      updatedAt: "2028-01-01T00:00:00.000Z",
+    });
+    expect(repository.snapshot.series[0]).toMatchObject({
+      tags: ["slow burn"],
+      updatedAt: "2028-01-01T00:00:00.000Z",
+    });
+
+    await service.deleteTag("slow burn");
+    expect(repository.snapshot.books[0].tags).toEqual([]);
+    expect(repository.snapshot.series[0].tags).toEqual([]);
+  });
+
   it("preserves contract fields when an existing editor input omits them", async () => {
     const repository = new MemoryLibraryRepository({
       books: [{

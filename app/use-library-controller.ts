@@ -135,6 +135,18 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     setNotice("Series removed; books kept");
   }
 
+  async function renameTag(currentTag: string, nextTag: string) {
+    const nextSnapshot = await command(() => service.renameTag(currentTag, nextTag));
+    setSnapshot(nextSnapshot);
+    setNotice("Tag renamed everywhere");
+  }
+
+  async function deleteTag(tag: string) {
+    const nextSnapshot = await command(() => service.deleteTag(tag));
+    setSnapshot(nextSnapshot);
+    setNotice("Tag removed everywhere");
+  }
+
   function downloadBackup() {
     try {
       const backup = service.createBackup(snapshot);
@@ -179,6 +191,8 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     deleteBook,
     undoBookRemoval,
     deleteSeries,
+    renameTag,
+    deleteTag,
     downloadBackup,
     restoreBackup,
     erase,

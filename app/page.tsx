@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { useMemo, useState, type ChangeEvent } from "react";
 import { BookEditor } from "../components/library/book-editor";
 import type { CoverSearchClient } from "../components/library/cover-search";
 import { LibraryView } from "../components/library/library-view";
@@ -8,6 +8,7 @@ import { SeriesEditor } from "../components/library/series-editor";
 import { SeriesView } from "../components/library/series-view";
 import { SettingsView } from "../components/library/settings-view";
 import type { Book, BookStatus, Series, ViewName } from "../lib/library/types";
+import { selectStoredTagCounts } from "../lib/library/selectors";
 import { useDeviceSettings } from "./use-device-settings";
 import { useLibraryController, type LibraryControllerDependencies } from "./use-library-controller";
 
@@ -24,6 +25,10 @@ export function PlotPileApp({
   const library = useLibraryController(controllerDependencies);
   const device = useDeviceSettings(library.showNotice);
   const { books, series } = library.snapshot;
+  const tagSuggestions = useMemo(
+    () => selectStoredTagCounts(books, series).map(([tag]) => tag),
+    [books, series],
+  );
   const [view, setView] = useState<ViewName>("library");
   const [seriesFocus, setSeriesFocus] = useState("");
   const [bookEditor, setBookEditor] = useState<BookEditorState | null>(null);
@@ -151,13 +156,16 @@ export function PlotPileApp({
       )}
       {view === "settings" && (
         <SettingsView
-          booksCount={books.length}
-          seriesCount={series.length}
+          books={books}
+          series={series}
           pendingLegacyCovers={library.pendingLegacyCovers}
+          saving={library.saving}
           device={device}
           onDownload={library.downloadBackup}
           onImport={(event) => void importBackup(event)}
           onErase={() => void eraseLibrary()}
+          onRenameTag={library.renameTag}
+          onDeleteTag={library.deleteTag}
         />
       )}
 
@@ -175,6 +183,7 @@ export function PlotPileApp({
           setError={library.setError}
           clearError={library.dismissError}
           coverClient={coverClient}
+          tagSuggestions={tagSuggestions}
           onSave={library.saveBook}
           onClose={() => setBookEditor(null)}
         />
@@ -188,6 +197,7 @@ export function PlotPileApp({
           error={library.error}
           setError={library.setError}
           clearError={library.dismissError}
+          tagSuggestions={tagSuggestions}
           onSave={library.saveSeries}
           onDelete={removeSeries}
           onClose={() => setSeriesEditor(null)}

@@ -1,8 +1,9 @@
 "use client";
 
-import type { ChangeEvent } from "react";
+import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { THEMES, type InstallPromptEvent } from "../../app/use-device-settings";
-import type { ThemeName } from "../../lib/library/types";
+import { selectStoredTagCounts } from "../../lib/library/selectors";
+import type { Book, Series, ThemeName } from "../../lib/library/types";
 import styles from "./settings-view.module.css";
 
 export type DeviceSettings = {
@@ -18,22 +19,52 @@ export type DeviceSettings = {
 };
 
 export function SettingsView({
-  booksCount,
-  seriesCount,
+  books,
+  series,
   pendingLegacyCovers,
+  saving,
   device,
   onDownload,
   onImport,
   onErase,
+  onRenameTag,
+  onDeleteTag,
 }: {
-  booksCount: number;
-  seriesCount: number;
+  books: Book[];
+  series: Series[];
   pendingLegacyCovers: number;
+  saving: boolean;
   device: DeviceSettings;
   onDownload: () => void;
   onImport: (event: ChangeEvent<HTMLInputElement>) => void;
   onErase: () => void;
+  onRenameTag: (currentTag: string, nextTag: string) => Promise<void>;
+  onDeleteTag: (tag: string) => Promise<void>;
 }) {
+  const tagCounts = useMemo(() => selectStoredTagCounts(books, series), [books, series]);
+  const [editingTag, setEditingTag] = useState("");
+  const [renameValue, setRenameValue] = useState("");
+
+  async function submitRename(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      await onRenameTag(editingTag, renameValue);
+      setEditingTag("");
+      setRenameValue("");
+    } catch {}
+  }
+
+  async function deleteTag(tag: string, count: number) {
+    if (!window.confirm(`Delete “${tag}” from ${count} ${count === 1 ? "item" : "items"}?`)) return;
+    try {
+      await onDeleteTag(tag);
+      if (editingTag === tag) {
+        setEditingTag("");
+        setRenameValue("");
+      }
+    } catch {}
+  }
+
   return (
     <section className="page settings-page" aria-labelledby="settings-title">
       <div className="page-heading"><div><p className="eyebrow">Install, protect, and move it</p><h1 id="settings-title">More</h1></div></div>
@@ -59,9 +90,35 @@ export function SettingsView({
         </article>
         <article className={`settings-card ${styles.card}`}>
           <span className={`settings-icon ${styles.icon}`} aria-hidden="true">▣</span>
-          <div><p className="eyebrow">On-device storage</p><h2>{booksCount} books · {seriesCount} series</h2><p>Your library lives in this browser on this phone. It works offline and does not require an account.</p>
+          <div><p className="eyebrow">On-device storage</p><h2>{books.length} books · {series.length} series</h2><p>Your library lives in this browser on this phone. It works offline and does not require an account.</p>
             {pendingLegacyCovers > 0 && <p role="status">{pendingLegacyCovers} old {pendingLegacyCovers === 1 ? "cover is" : "covers are"} still waiting to be copied. Plot Pile will retry next time it opens online.</p>}
             {device.storagePersistent === true ? <span className={styles.protectedLabel}>✓ Storage protection enabled</span> : device.canPersistStorage && <button className="secondary-button" type="button" onClick={() => void device.protectStorage()}>Protect local storage</button>}
+          </div>
+        </article>
+        <article className={`settings-card ${styles.card} ${styles.tagCard}`}>
+          <span className={`settings-icon ${styles.icon}`} aria-hidden="true">#</span>
+          <div><p className="eyebrow">Tags</p><h2>Manage tags</h2><p>Rename or remove tags everywhere they are stored.</p>
+            {tagCounts.length ? (
+              <div className={styles.tagList}>
+                {tagCounts.map(([tag, count]) => (
+                  <div className={styles.tagRow} key={tag}>
+                    {editingTag === tag ? (
+                      <form onSubmit={(event) => void submitRename(event)}>
+                        <label><span className="sr-only">New name for {tag}</span><input autoFocus value={renameValue} onChange={(event) => setRenameValue(event.target.value)} /></label>
+                        <button className="secondary-button" type="submit" disabled={saving}>Save</button>
+                        <button className="cancel-button" type="button" onClick={() => setEditingTag("")}>Cancel</button>
+                      </form>
+                    ) : (
+                      <>
+                        <span><strong>{tag}</strong><small>{count} {count === 1 ? "use" : "uses"}</small></span>
+                        <button className="text-action" type="button" disabled={saving} onClick={() => { setEditingTag(tag); setRenameValue(tag); }} aria-label={`Rename ${tag}`}>Rename</button>
+                        <button className="danger-link" type="button" disabled={saving} onClick={() => void deleteTag(tag, count)} aria-label={`Delete ${tag}`}>Delete</button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : <p className={styles.emptyTags}>Tags added to books or series will appear here.</p>}
           </div>
         </article>
         <article className={`settings-card ${styles.card}`}>

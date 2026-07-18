@@ -9,6 +9,7 @@ import {
   nextSeriesPosition,
   normalizeTags,
   parseBackup,
+  renameTag,
   seriesNameKey,
   sortSeriesBooks,
 } from "../lib/library/model";
@@ -22,6 +23,11 @@ describe("library domain model", () => {
     expect(normalizeTags(["Superhero", " superhero ", "#SUPERHERO", ...tags]).slice(0, 2))
       .toEqual(["superhero", "trope 0"]);
     expect(normalizeTags(tags)).toHaveLength(40);
+  });
+
+  it("renames a tag through normalization and merges an existing target", () => {
+    expect(renameTag(["Fantasy", "slow burn"], " #FANTASY ", " Slow Burn "))
+      .toEqual(["slow burn"]);
   });
 
   it("uses a stable case-insensitive series key", () => {

@@ -43,6 +43,19 @@ export class MemoryLibraryRepository implements LibraryRepository {
     this.snapshot = next;
   }
 
+  async saveBooksAndSeries(books: Book[], series: Series[]) {
+    const next = clone(this.snapshot);
+    for (const item of books) {
+      next.books = next.books.filter((book) => book.id !== item.id);
+      next.books.push(clone(item));
+    }
+    for (const item of series) {
+      next.series = next.series.filter((current) => current.id !== item.id);
+      next.series.push(clone(item));
+    }
+    this.snapshot = next;
+  }
+
   async deleteBook(id: string) {
     this.snapshot.books = this.snapshot.books.filter((item) => item.id !== id);
   }

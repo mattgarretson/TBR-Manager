@@ -130,6 +130,27 @@ export class IndexedDbLibraryRepository implements LibraryRepository {
     }
   }
 
+  async saveBooksAndSeries(books: Book[], series: Series[]) {
+    const database = await openDatabase();
+    try {
+      const transaction = database.transaction([BOOKS_STORE, SERIES_STORE], "readwrite");
+      const completed = transactionDone(transaction);
+      try {
+        const bookStore = transaction.objectStore(BOOKS_STORE);
+        const seriesStore = transaction.objectStore(SERIES_STORE);
+        books.forEach((book) => bookStore.put(book));
+        series.forEach((item) => seriesStore.put(item));
+      } catch (caught) {
+        transaction.abort();
+        await completed.catch(() => {});
+        throw caught;
+      }
+      await completed;
+    } finally {
+      database.close();
+    }
+  }
+
   async deleteBook(id: string) {
     const database = await openDatabase();
     try {

@@ -35,6 +35,14 @@ export function selectTagCounts(books: readonly Book[], series: readonly Series[
   return [...counts.entries()].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]));
 }
 
+export function selectStoredTagCounts(books: readonly Book[], series: readonly Series[]): [string, number][] {
+  const counts = new Map<string, number>();
+  [...books, ...series].forEach((item) => item.tags.forEach((tag) =>
+    counts.set(tag, (counts.get(tag) ?? 0) + 1),
+  ));
+  return [...counts.entries()].sort((left, right) => left[0].localeCompare(right[0]));
+}
+
 export function selectVisibleBooks(input: {
   books: readonly Book[];
   series: readonly Series[];

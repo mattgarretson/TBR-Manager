@@ -8,6 +8,7 @@ export interface LibraryRepository {
   commitBook(book: Book, seriesToCreate?: Series): Promise<void>;
   saveSeries(series: Series): Promise<void>;
   saveSeriesWithBooks(series: Series, books: Book[]): Promise<void>;
+  saveBooksAndSeries(books: Book[], series: Series[]): Promise<void>;
   deleteBook(id: string): Promise<void>;
   deleteSeries(id: string, updatedAt: string): Promise<void>;
   replace(snapshot: LibrarySnapshot): Promise<void>;

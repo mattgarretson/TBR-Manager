@@ -17,6 +17,20 @@ export function normalizeTags(tags: unknown): string[] {
   ];
 }
 
+export function renameTag(tags: unknown, currentTag: string, nextTag: string): string[] {
+  const source = normalizeTags([currentTag])[0];
+  const target = normalizeTags([nextTag])[0];
+  const normalized = normalizeTags(tags);
+  if (!source || !target) return normalized;
+  return normalizeTags(normalized.map((tag) => tag === source ? target : tag));
+}
+
+export function removeTag(tags: unknown, tagToRemove: string): string[] {
+  const target = normalizeTags([tagToRemove])[0];
+  if (!target) return normalizeTags(tags);
+  return normalizeTags(tags).filter((tag) => tag !== target);
+}
+
 export function cleanSeriesName(value: unknown): string {
   return String(value ?? "").trim().replace(/\s+/g, " ");
 }

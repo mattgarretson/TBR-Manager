@@ -57,6 +57,16 @@
 .fileButton input { display: none; }
 .dangerCard { border-color: #dfb8b2; }
 .dangerCard :global(.settings-icon) { background: #8b3038; }
+.tagCard { grid-column: 1 / -1; }
+.tagList { display: grid; gap: 7px; }
+.tagRow { min-width: 0; padding: 9px 0; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 9px; border-top: 1px solid var(--line); }
+.tagRow > span { min-width: 0; }
+.tagRow strong { display: block; overflow: hidden; font-size: 0.7rem; text-overflow: ellipsis; }
+.tagRow small { display: block; margin-top: 2px; color: var(--muted); font-size: 0.56rem; }
+.tagRow form { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 7px; }
+.tagRow form label { flex: 1 1 170px; }
+.tagRow input { width: 100%; min-height: 36px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; }
+.emptyTags { margin-bottom: 0 !important; }
 
 @media (min-width: 700px) {
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }

@@ -101,6 +101,23 @@ describe("Plot Pile behavior", () => {
     await waitFor(() => expect(screen.getAllByRole("button", { name: /progression/i })).toHaveLength(2));
   });
 
+  it("adds a current library tag from editor autocomplete", async () => {
+    const user = userEvent.setup();
+    const { repository } = renderApp();
+    await screen.findByText("Book One");
+    await user.click(screen.getByRole("button", { name: "Add book" }));
+    await user.type(screen.getByRole("textbox", { name: "Book title" }), "Another Book");
+    await user.type(screen.getByRole("textbox", { name: "Author" }), "Another Writer");
+    await user.click(screen.getByText("More details"));
+    await user.type(screen.getByRole("textbox", { name: "Add book-specific tags" }), "fan");
+    await user.click(screen.getByRole("button", { name: "Use tag fantasy" }));
+    expect(screen.getByRole("button", { name: "Remove fantasy" })).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Add to my TBR" }));
+    await waitFor(() => expect(repository.snapshot.books).toHaveLength(2));
+    expect(repository.snapshot.books.find((item) => item.title === "Another Book")?.tags).toEqual(["fantasy"]);
+  });
+
   it("edits a book through the controller and validates required fields", async () => {
     const user = userEvent.setup();
     const { repository } = renderApp();
