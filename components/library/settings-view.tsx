@@ -88,7 +88,7 @@ export function SettingsView({
         </article>
         <article className={`settings-card ${styles.card} ${styles.themeCard}`}>
           <span className={`settings-icon ${styles.icon}`} aria-hidden="true">◐</span>
-          <div><p className="eyebrow">Color scheme</p><h2>Make it hers</h2><p>Choose a palette. The selection stays on this device.</p>
+          <div><p className="eyebrow">Color scheme</p><h2>Make it yours</h2><p>Choose a palette. The selection stays on this device.</p>
             <div className={`theme-options ${styles.themeOptions}`} role="group" aria-label="Choose a color scheme">
               {THEMES.map((item) => (
                 <button aria-label={item.name} className={device.theme === item.id ? `active ${styles.active}` : ""} type="button" onClick={() => device.setTheme(item.id)} aria-pressed={device.theme === item.id} key={item.id}>
