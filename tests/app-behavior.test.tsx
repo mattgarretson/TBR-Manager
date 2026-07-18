@@ -94,6 +94,13 @@ describe("Plot Pile behavior", () => {
     expect(tagButtons[0].getAttribute("aria-pressed")).toBe("false");
   });
 
+  it("defers decoding and loading library cover images", async () => {
+    renderApp();
+    const cover = await screen.findByRole("img", { name: "Cover of Book One" });
+    expect(cover.getAttribute("loading")).toBe("lazy");
+    expect(cover.getAttribute("decoding")).toBe("async");
+  });
+
   it("restores valid library and series view preferences without persisting search or tags", async () => {
     localStorage.setItem(LIBRARY_VIEW_PREFERENCES_KEY, JSON.stringify({
       shelf: "reading",

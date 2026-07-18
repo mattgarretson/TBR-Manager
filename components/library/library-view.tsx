@@ -169,7 +169,7 @@ export function LibraryView({
                 <div className={`cover cover-tone-${coverTone(book.id)}`}>
                   {book.coverImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={book.coverImage} alt={`Cover of ${book.title}`} />
+                    <img src={book.coverImage} alt={`Cover of ${book.title}`} loading="lazy" decoding="async" />
                   ) : (
                     <div className="cover-placeholder"><span>{initials(book.title)}</span><small>{book.author}</small></div>
                   )}
