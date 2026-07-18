@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { currentLocalDate, effectiveBookTags } from "../../lib/library/model";
 import { selectTagCounts, selectVisibleBooks } from "../../lib/library/selectors";
 import type {
@@ -10,9 +10,13 @@ import type {
   BookSort,
   BookStatus,
   Series,
-  SortDirection,
 } from "../../lib/library/types";
 import { coverTone, formatDate, initials } from "./view-utils";
+import {
+  DEFAULT_LIBRARY_VIEW_PREFERENCES,
+  readLibraryViewPreferences,
+  writeLibraryViewPreferences,
+} from "./view-preferences";
 
 export function LibraryView({
   books,
@@ -43,10 +47,8 @@ export function LibraryView({
 }) {
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState("All");
-  const [shelf, setShelf] = useState<BookShelf>("tbr");
-  const [scope, setScope] = useState<BookScope>("all");
-  const [sort, setSort] = useState<BookSort>("createdAt");
-  const [direction, setDirection] = useState<SortDirection>("desc");
+  const [preferences, setPreferences] = useState(readLibraryViewPreferences);
+  const { shelf, scope, sort, direction } = preferences;
   const seriesMap = useMemo(() => new Map(series.map((item) => [item.id, item])), [series]);
   const allTags = useMemo(() => selectTagCounts(books, series), [books, series]);
   const visibleBooks = useMemo(
@@ -67,11 +69,14 @@ export function LibraryView({
   const unfinishedCount = books.filter((item) => item.status === "tbr" || item.status === "reading").length;
   const finishedCount = books.filter((item) => item.status === "finished").length;
 
+  useEffect(() => {
+    writeLibraryViewPreferences(preferences);
+  }, [preferences]);
+
   function clearFilters() {
     setQuery("");
-    setShelf("tbr");
-    setScope("all");
     setActiveTag("All");
+    setPreferences(DEFAULT_LIBRARY_VIEW_PREFERENCES);
   }
 
   return (
@@ -105,7 +110,7 @@ export function LibraryView({
         <div className="sort-tools" aria-label="Sort books">
           <label>
             <span className="sr-only">Sort books by</span>
-            <select value={sort} onChange={(event) => setSort(event.target.value as BookSort)}>
+            <select value={sort} onChange={(event) => setPreferences((current) => ({ ...current, sort: event.target.value as BookSort }))}>
               <option value="createdAt">Date added</option>
               <option value="title">Title</option>
               <option value="author">Author</option>
@@ -114,7 +119,7 @@ export function LibraryView({
               <option value="releaseDate">Release date</option>
             </select>
           </label>
-          <button className="direction-button" type="button" onClick={() => setDirection((current) => current === "asc" ? "desc" : "asc")} aria-label={`Sort ${direction === "asc" ? "descending" : "ascending"}`}>
+          <button className="direction-button" type="button" onClick={() => setPreferences((current) => ({ ...current, direction: current.direction === "asc" ? "desc" : "asc" }))} aria-label={`Sort ${direction === "asc" ? "descending" : "ascending"}`}>
             <span aria-hidden="true">{direction === "asc" ? "↑" : "↓"}</span> {direction === "asc" ? "Asc" : "Desc"}
           </button>
         </div>
@@ -127,7 +132,7 @@ export function LibraryView({
           ["done", "Done"],
           ["all", "All"],
         ] as [BookShelf, string][]).map(([value, label]) => (
-          <button className={shelf === value ? "active" : ""} type="button" onClick={() => setShelf(value)} aria-pressed={shelf === value} key={value}>{label}</button>
+          <button className={shelf === value ? "active" : ""} type="button" onClick={() => setPreferences((current) => ({ ...current, shelf: value }))} aria-pressed={shelf === value} key={value}>{label}</button>
         ))}
       </div>
 
@@ -139,7 +144,7 @@ export function LibraryView({
           ["complete", "Finished series"],
           ["upcoming", "Upcoming releases"],
         ] as [BookScope, string][]).map(([value, label]) => (
-          <button className={scope === value ? "active" : ""} type="button" onClick={() => setScope(value)} aria-pressed={scope === value} key={value}>{label}</button>
+          <button className={scope === value ? "active" : ""} type="button" onClick={() => setPreferences((current) => ({ ...current, scope: value }))} aria-pressed={scope === value} key={value}>{label}</button>
         ))}
       </div>
 

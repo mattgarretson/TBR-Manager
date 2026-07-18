@@ -3,6 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { PlotPileApp } from "../app/page";
 import type { CoverSearchClient } from "../components/library/cover-search";
+import {
+  LIBRARY_VIEW_PREFERENCES_KEY,
+  SERIES_VIEW_PREFERENCES_KEY,
+} from "../components/library/view-preferences";
 import { LibraryService } from "../lib/library/service";
 import { MemoryLibraryRepository } from "./helpers/memory-repository";
 import { book, snapshot, timestamp } from "./fixtures/library";
@@ -88,6 +92,82 @@ describe("Plot Pile behavior", () => {
     expect(tagButtons[0].getAttribute("aria-pressed")).toBe("true");
     await user.click(tagButtons[0]);
     expect(tagButtons[0].getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("restores valid library and series view preferences without persisting search or tags", async () => {
+    localStorage.setItem(LIBRARY_VIEW_PREFERENCES_KEY, JSON.stringify({
+      shelf: "reading",
+      scope: "complete",
+      sort: "title",
+      direction: "asc",
+      query: "must not restore",
+      activeTag: "slow burn",
+    }));
+    localStorage.setItem(SERIES_VIEW_PREFERENCES_KEY, JSON.stringify({
+      scope: "upcoming",
+      sort: "books",
+      direction: "desc",
+      query: "must not restore",
+    }));
+    const user = userEvent.setup();
+    renderApp();
+    await screen.findByRole("heading", { name: "My TBR" });
+
+    expect(screen.getByRole("button", { name: "Reading" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Finished series" }).getAttribute("aria-pressed")).toBe("true");
+    expect((screen.getByRole("combobox", { name: "Sort books by" }) as HTMLSelectElement).value).toBe("title");
+    expect((screen.getByRole("searchbox", { name: "Search books" }) as HTMLInputElement).value).toBe("");
+
+    await user.click(screen.getByRole("button", { name: "Series" }));
+    expect(screen.getByRole("button", { name: /Upcoming/ }).getAttribute("aria-pressed")).toBe("true");
+    expect((screen.getByRole("combobox", { name: "Sort series by" }) as HTMLSelectElement).value).toBe("books");
+    expect((screen.getByRole("searchbox", { name: "Search series and linked books" }) as HTMLInputElement).value).toBe("");
+  });
+
+  it("falls back to current defaults for invalid stored view preferences", async () => {
+    localStorage.setItem(LIBRARY_VIEW_PREFERENCES_KEY, JSON.stringify({
+      shelf: "paused",
+      scope: "everything",
+      sort: "rating",
+      direction: "sideways",
+    }));
+    localStorage.setItem(SERIES_VIEW_PREFERENCES_KEY, "{not json");
+    const user = userEvent.setup();
+    renderApp();
+    await screen.findByRole("heading", { name: "My TBR" });
+    expect(screen.getByRole("button", { name: "To read" }).getAttribute("aria-pressed")).toBe("true");
+    expect((screen.getByRole("combobox", { name: "Sort books by" }) as HTMLSelectElement).value).toBe("createdAt");
+
+    await user.click(screen.getByRole("button", { name: "Series" }));
+    expect((screen.getByRole("combobox", { name: "Sort series by" }) as HTMLSelectElement).value).toBe("name");
+    expect(screen.getByRole("button", { name: "Sort descending" }).textContent).toContain("Asc");
+  });
+
+  it("clear filters restores and stores every library view default", async () => {
+    localStorage.setItem(LIBRARY_VIEW_PREFERENCES_KEY, JSON.stringify({
+      shelf: "all",
+      scope: "complete",
+      sort: "title",
+      direction: "asc",
+    }));
+    const user = userEvent.setup();
+    renderApp();
+    await screen.findByRole("heading", { name: "My TBR" });
+    await user.type(screen.getByRole("searchbox", { name: "Search books" }), "no such book");
+    await user.click(screen.getByRole("button", { name: "Clear filters" }));
+
+    expect(screen.getByRole("button", { name: "To read" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getAllByRole("button", { name: "All" }).filter(
+      (element) => element.getAttribute("aria-pressed") === "true",
+    )).toHaveLength(1);
+    expect((screen.getByRole("combobox", { name: "Sort books by" }) as HTMLSelectElement).value).toBe("createdAt");
+    expect(screen.getByRole("button", { name: "Sort ascending" }).textContent).toContain("Desc");
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(LIBRARY_VIEW_PREFERENCES_KEY) ?? "{}")).toEqual({
+      shelf: "tbr",
+      scope: "all",
+      sort: "createdAt",
+      direction: "desc",
+    }));
   });
 
   it("moves a card from to read to reading to finished and stamps the date", async () => {

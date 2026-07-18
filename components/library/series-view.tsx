@@ -1,10 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { currentLocalDate } from "../../lib/library/model";
 import { selectAllSeriesCards, selectSeriesCards } from "../../lib/library/selectors";
-import type { Book, Series, SeriesScope, SeriesSort, SortDirection } from "../../lib/library/types";
+import type { Book, Series, SeriesScope, SeriesSort } from "../../lib/library/types";
 import { formatDate } from "./view-utils";
+import {
+  readSeriesViewPreferences,
+  writeSeriesViewPreferences,
+} from "./view-preferences";
 
 export function SeriesView({
   books,
@@ -23,10 +27,9 @@ export function SeriesView({
   onAddBook: (seriesId: string) => void;
   onEditBook: (book: Book) => void;
 }) {
-  const [scope, setScope] = useState<SeriesScope>("all");
+  const [preferences, setPreferences] = useState(readSeriesViewPreferences);
+  const { scope, sort, direction } = preferences;
   const [query, setQuery] = useState(focusName);
-  const [sort, setSort] = useState<SeriesSort>("name");
-  const [direction, setDirection] = useState<SortDirection>("asc");
   const allCards = useMemo(() => selectAllSeriesCards(series, books, currentLocalDate()), [books, series]);
   const cards = useMemo(
     () => selectSeriesCards({ cards: allCards, query, scope, sort, direction }),
@@ -34,6 +37,10 @@ export function SeriesView({
   );
   const incompleteCount = series.filter((item) => item.status === "incomplete").length;
   const upcomingCount = allCards.filter(({ next }) => Boolean(next)).length;
+
+  useEffect(() => {
+    writeSeriesViewPreferences(preferences);
+  }, [preferences]);
 
   return (
     <section className="page" aria-labelledby="series-title">
@@ -54,12 +61,12 @@ export function SeriesView({
             ["complete", "Finished"],
             ["upcoming", `Upcoming ${upcomingCount}`],
           ] as [SeriesScope, string][]).map(([value, label]) => (
-            <button className={scope === value ? "active" : ""} type="button" onClick={() => setScope(value)} aria-pressed={scope === value} key={value}>{label}</button>
+            <button className={scope === value ? "active" : ""} type="button" onClick={() => setPreferences((current) => ({ ...current, scope: value }))} aria-pressed={scope === value} key={value}>{label}</button>
           ))}
         </div>
         <div className="sort-tools" aria-label="Sort series">
-          <label><span className="sr-only">Sort series by</span><select value={sort} onChange={(event) => setSort(event.target.value as SeriesSort)}><option value="name">Series name</option><option value="books">Book count</option><option value="nextRelease">Next release</option><option value="updatedAt">Recently updated</option></select></label>
-          <button className="direction-button" type="button" onClick={() => setDirection((current) => current === "asc" ? "desc" : "asc")} aria-label={`Sort ${direction === "asc" ? "descending" : "ascending"}`}><span aria-hidden="true">{direction === "asc" ? "↑" : "↓"}</span> {direction === "asc" ? "Asc" : "Desc"}</button>
+          <label><span className="sr-only">Sort series by</span><select value={sort} onChange={(event) => setPreferences((current) => ({ ...current, sort: event.target.value as SeriesSort }))}><option value="name">Series name</option><option value="books">Book count</option><option value="nextRelease">Next release</option><option value="updatedAt">Recently updated</option></select></label>
+          <button className="direction-button" type="button" onClick={() => setPreferences((current) => ({ ...current, direction: current.direction === "asc" ? "desc" : "asc" }))} aria-label={`Sort ${direction === "asc" ? "descending" : "ascending"}`}><span aria-hidden="true">{direction === "asc" ? "↑" : "↓"}</span> {direction === "asc" ? "Asc" : "Desc"}</button>
         </div>
       </div>
 
