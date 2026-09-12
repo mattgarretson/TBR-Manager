@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { IndexedDbLibraryRepository } from "../lib/library/indexeddb-repository";
-import { migrateLegacyLibrary } from "../lib/library/legacy";
 import type { LibraryRepository } from "../lib/library/repository";
 import { LibraryService } from "../lib/library/service";
 import type { Book, LibrarySnapshot, SaveBookBatchInput, SaveBookInput, SaveSeriesInput } from "../lib/library/types";
@@ -14,7 +13,6 @@ const emptySnapshot: LibrarySnapshot = { books: [], series: [] };
 export type LibraryControllerDependencies = {
   repository?: LibraryRepository;
   service?: LibraryService;
-  migrate?: typeof migrateLegacyLibrary;
   bookRemovalUndoMs?: number;
 };
 
@@ -27,7 +25,6 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     () => dependencies.service ?? new LibraryService(repository),
     [dependencies.service, repository],
   );
-  const migrate = dependencies.migrate ?? migrateLegacyLibrary;
   const bookRemovalUndoMs = dependencies.bookRemovalUndoMs ?? 6_000;
   const [snapshot, setSnapshot] = useState<LibrarySnapshot>(emptySnapshot);
   const [loading, setLoading] = useState(true);
@@ -35,24 +32,13 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [pendingBookRemoval, setPendingBookRemoval] = useState<Book | null>(null);
-  const [pendingLegacyCovers, setPendingLegacyCovers] = useState(0);
   const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
   const [backupNudgeSnoozedUntil, setBackupNudgeSnoozedUntil] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     async function start() {
-      let migrationNotice = "";
       try {
-        try {
-          const result = await migrate({ repository, storage: window.localStorage });
-          if (result.importedBooks) {
-            migrationNotice = `Moved ${result.importedBooks} ${result.importedBooks === 1 ? "book" : "books"} onto this device`;
-          }
-          if (active) setPendingLegacyCovers(result.pendingCovers);
-        } catch (caught) {
-          if (active) setError(caught instanceof Error ? caught.message : "Your old shelf could not be copied yet.");
-        }
         const [nextSnapshot, backupMetadata] = await Promise.all([
           service.read(),
           service.readBackupMetadata(),
@@ -61,7 +47,6 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
         setSnapshot(nextSnapshot);
         setLastBackupAt(backupMetadata.lastBackupAt);
         setBackupNudgeSnoozedUntil(backupMetadata.snoozedUntil);
-        if (migrationNotice) setNotice(migrationNotice);
       } catch (caught) {
         if (active) setError(caught instanceof Error ? caught.message : "Could not open the on-device library.");
       } finally {
@@ -72,7 +57,7 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     return () => {
       active = false;
     };
-  }, [migrate, repository, service]);
+  }, [service]);
 
   useEffect(() => {
     if (!notice) return;
@@ -202,7 +187,6 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     error,
     notice,
     pendingBookRemoval,
-    pendingLegacyCovers,
     lastBackupAt,
     showBackupNudge: service.shouldShowBackupNudge(
       snapshot.books.length,

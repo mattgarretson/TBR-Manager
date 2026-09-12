@@ -99,23 +99,3 @@ export type SaveSeriesInput = {
   notes: string;
   books?: SaveSeriesBookInput[];
 };
-
-export type LegacySeries = {
-  id: string;
-  name: string;
-  status: SeriesStatus;
-  nextReleaseDate: string;
-};
-
-export type LegacyBook = {
-  id: string;
-  seriesId: string | null;
-  title: string;
-  author: string;
-  reason: string;
-  tags: string[];
-  coverUrl: string;
-  coverKey?: string;
-  createdAt: string;
-  updatedAt: string;
-};

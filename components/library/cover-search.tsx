@@ -97,7 +97,6 @@ export function CoverSearch({
               aria-busy={downloadingCoverId === candidate.coverId}
               onClick={() => void pickCover(candidate.coverId)}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={client.coverImageUrl(candidate.coverId, "M")}
                 alt=""

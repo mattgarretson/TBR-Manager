@@ -4,34 +4,36 @@ Plot Pile is an offline-first, installable TBR organizer designed for phones.
 
 ## Product shape
 
-- Books with authors, covers, notes, unlimited normalized tags, and release dates
+- Books with authors, covers, notes, unlimited normalized tags, release dates, and a read lifecycle (to read / reading / finished / didn't finish)
 - Cover search and offline download from Open Library
 - First-class series with default authors, inherited tags, ongoing/finished publishing status, reading order, notes, and upcoming releases
 - Batch series creation for numbered runs or pasted individual titles, with an editable preview
-- Completed series omit the add-next-book shortcut so finished reading orders stay settled
+- Android share target and "Add from links" batch import for clearing out open tabs
 - Library and series search, filters, and ascending/descending sorts
+- Tag manager, duplicate warnings, undo for book removal, backup reminders, four color themes
 - IndexedDB as the on-device source of truth
 - JSON backup and restore, including localized cover data
-- One-time import of records saved by the earlier hosted-database version
 - PWA manifest, service worker, Android install prompt, and iOS installation guidance
 
-The existing D1 and R2 routes remain available only so an existing browser can copy its old hosted shelf into the on-device database. New edits are stored locally.
+There is no server. Each browser keeps its own library; moving to a new device or a new site address is done with a backup download and restore.
 
 ## Architecture
 
-- `lib/library` contains the typed domain model, selectors, application service, migration adapter, and IndexedDB repository.
+- `lib/library` contains the typed domain model, selectors, application service, and IndexedDB repository.
 - `app/use-library-controller.ts` is the only React boundary that coordinates persisted library state.
 - `components/library` owns the library, series, settings, and editor workflows.
-- `/api/books` and `/api/covers/:key` are temporary, read-only compatibility endpoints. They are not part of normal application operation.
+- `src/main.tsx` + `index.html` are the Vite entry point.
 
-The version-one backup format and the `plot-pile-library` IndexedDB name are compatibility contracts. See `docs/architecture.md` and `docs/legacy-retirement.md` before changing either one.
+The version-one backup format and the `plot-pile-library` IndexedDB name are compatibility contracts. See `docs/architecture.md` before changing either one.
 
 ## Development
 
 ```bash
 npm install
-npm run dev
-npm run check
+npm run dev      # http://localhost:3000
+npm run check    # typecheck, lint, tests, production build
 ```
 
-`npm run check` performs type checking, linting, domain/storage/UI/PWA tests, and a production build.
+## Deployment
+
+Pushing to `main` runs `.github/workflows/deploy.yml`, which runs `npm run check` and publishes `dist/` to GitHub Pages. The build uses relative URLs, so it works under a project path (`/TBR-Manager/`) or at a domain root.

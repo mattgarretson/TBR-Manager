@@ -274,7 +274,6 @@ export function BookEditor({
             <div className="cover-editor">
               <label className={`cover-picker cover-tone-${coverTone((book?.id ?? draft.title) || "new")}`}>
                 {draft.coverImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={draft.coverImage} alt="Selected cover preview" />
                 ) : <span><b>＋</b>Add cover</span>}
                 <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => void chooseCover(event)} />

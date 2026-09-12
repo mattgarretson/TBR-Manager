@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+  --font-dm-sans: "DM Sans Variable";
+  --font-fraunces: "Fraunces Variable";
   --ink: #251d1a;
   --muted: #746761;
   --paper: #f5eee4;

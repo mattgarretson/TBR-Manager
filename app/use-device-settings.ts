@@ -34,7 +34,16 @@ export function useDeviceSettings(showNotice: (message: string) => void) {
   });
 
   useEffect(() => {
-    if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js");
+    if ("serviceWorker" in navigator) {
+      if (import.meta.env.PROD) {
+        void navigator.serviceWorker.register("./sw.js");
+      } else {
+        // A cache-first worker left over from a production run would serve stale dev modules.
+        void navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => void registration.unregister());
+        });
+      }
+    }
     if (navigator.storage?.persisted) void navigator.storage.persisted().then(setStoragePersistent);
     const handlePrompt = (event: Event) => {
       event.preventDefault();

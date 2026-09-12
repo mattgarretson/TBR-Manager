@@ -32,6 +32,9 @@ Object.defineProperty(navigator, "storage", {
 });
 Object.defineProperty(navigator, "serviceWorker", {
   configurable: true,
-  value: { register: vi.fn().mockResolvedValue(undefined) },
+  value: {
+    register: vi.fn().mockResolvedValue(undefined),
+    getRegistrations: vi.fn().mockResolvedValue([]),
+  },
 });
 

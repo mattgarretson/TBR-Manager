@@ -21,7 +21,6 @@ export type DeviceSettings = {
 export function SettingsView({
   books,
   series,
-  pendingLegacyCovers,
   saving,
   lastBackupAt,
   device,
@@ -34,7 +33,6 @@ export function SettingsView({
 }: {
   books: Book[];
   series: Series[];
-  pendingLegacyCovers: number;
   saving: boolean;
   lastBackupAt: string | null;
   device: DeviceSettings;
@@ -102,7 +100,6 @@ export function SettingsView({
         <article className={`settings-card ${styles.card}`}>
           <span className={`settings-icon ${styles.icon}`} aria-hidden="true">▣</span>
           <div><p className="eyebrow">On-device storage</p><h2>{books.length} books · {series.length} series</h2><p>Your library lives in this browser on this phone. It works offline and does not require an account.</p>
-            {pendingLegacyCovers > 0 && <p role="status">{pendingLegacyCovers} old {pendingLegacyCovers === 1 ? "cover is" : "covers are"} still waiting to be copied. Plot Pile will retry next time it opens online.</p>}
             {device.storagePersistent === true ? <span className={styles.protectedLabel}>✓ Storage protection enabled</span> : device.canPersistStorage && <button className="secondary-button" type="button" onClick={() => void device.protectStorage()}>Protect local storage</button>}
           </div>
         </article>

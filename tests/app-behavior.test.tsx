@@ -26,14 +26,13 @@ function renderAppWithRepository(
     now: () => new Date(timestamp),
     createId: () => `created-id-${generatedId++}`,
   });
-  const migrate = vi.fn().mockResolvedValue({ importedBooks: 0, localizedCovers: 0, pendingCovers: 0 });
   const rendered = render(
     <PlotPileApp
-      controllerDependencies={{ repository, service, migrate, bookRemovalUndoMs }}
+      controllerDependencies={{ repository, service, bookRemovalUndoMs }}
       coverClient={coverClient}
     />,
   );
-  return { repository, service, migrate, ...rendered };
+  return { repository, service, ...rendered };
 }
 
 describe("Plot Pile behavior", () => {
@@ -44,9 +43,9 @@ describe("Plot Pile behavior", () => {
       now: () => new Date(timestamp),
       createId: () => "shared-book",
     });
-    let finishMigration: ((value: { importedBooks: number; localizedCovers: number; pendingCovers: number }) => void) | undefined;
-    const migrate = vi.fn(() => new Promise<{ importedBooks: number; localizedCovers: number; pendingCovers: number }>((resolve) => {
-      finishMigration = resolve;
+    let finishLoading: (() => void) | undefined;
+    vi.spyOn(service, "read").mockImplementationOnce(() => new Promise((resolve) => {
+      finishLoading = () => resolve(repository.snapshot);
     }));
     const params = new URLSearchParams({
       title: "A Psalm for the Wild-Built by Becky Chambers | Goodreads",
@@ -54,12 +53,12 @@ describe("Plot Pile behavior", () => {
     });
     window.history.pushState({}, "", `/?${params}`);
 
-    render(<PlotPileApp controllerDependencies={{ repository, service, migrate }} />);
+    render(<PlotPileApp controllerDependencies={{ repository, service }} />);
 
     await waitFor(() => expect(window.location.search).toBe(""));
     expect(screen.queryByRole("dialog")).toBeNull();
     await act(async () => {
-      finishMigration?.({ importedBooks: 0, localizedCovers: 0, pendingCovers: 0 });
+      finishLoading?.();
     });
 
     expect((await screen.findByRole("textbox", { name: "Book title" }) as HTMLInputElement).value)

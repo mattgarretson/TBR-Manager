@@ -212,7 +212,6 @@ export function PlotPileApp({
         <SettingsView
           books={books}
           series={series}
-          pendingLegacyCovers={library.pendingLegacyCovers}
           saving={library.saving}
           lastBackupAt={library.lastBackupAt}
           device={device}
@@ -288,8 +287,4 @@ export function PlotPileApp({
       ) : library.notice && <div className="toast" role="status">✓ {library.notice}</div>}
     </main>
   );
-}
-
-export default function Home() {
-  return <PlotPileApp />;
 }
