@@ -146,6 +146,14 @@ export function PlotPileApp({
     }
   }
 
+  async function shrinkCovers() {
+    const count = books.filter((book) => book.coverImage.startsWith("data:")).length;
+    if (!window.confirm(`Shrink ${count} stored ${count === 1 ? "cover" : "covers"} to at most 600×900? This can't be undone, so download a backup first if you want the originals.`)) return;
+    try {
+      await library.shrinkCovers();
+    } catch {}
+  }
+
   async function eraseLibrary() {
     if (!window.confirm("Erase every book and series stored on this device? Download a backup first if you may want them later.")) return;
     try {
@@ -216,6 +224,7 @@ export function PlotPileApp({
           onDownload={() => void library.downloadBackup()}
           onAddFromLinks={openLinkImport}
           onImport={(event) => void importBackup(event)}
+          onShrinkCovers={() => void shrinkCovers()}
           onErase={() => void eraseLibrary()}
           onRenameTag={library.renameTag}
           onDeleteTag={library.deleteTag}

@@ -44,6 +44,25 @@ describe("LibraryService", () => {
     expect(await service.restoreBackup(backup)).toEqual(snapshot);
   });
 
+  it("replaces only covers that still match what was shrunk, without bumping updatedAt", async () => {
+    const repository = new MemoryLibraryRepository({
+      ...snapshot,
+      books: [book, { ...book, id: "book-2", coverImage: "data:image/png;base64,edited" }],
+    });
+    const service = new LibraryService(repository, { now: () => new Date("2027-02-01T00:00:00.000Z") });
+    const result = await service.replaceCovers([
+      { bookId: book.id, previous: book.coverImage, next: "data:image/jpeg;base64,small" },
+      { bookId: "book-2", previous: "data:image/png;base64,original", next: "data:image/jpeg;base64,stale" },
+      { bookId: "missing", previous: "x", next: "y" },
+    ]);
+    expect(result.replaced).toBe(1);
+    expect(result.snapshot.books.find((item) => item.id === book.id))
+      .toMatchObject({ coverImage: "data:image/jpeg;base64,small", updatedAt: timestamp });
+    expect(result.snapshot.books.find((item) => item.id === "book-2")?.coverImage)
+      .toBe("data:image/png;base64,edited");
+    expect((await service.replaceCovers([])).replaced).toBe(0);
+  });
+
   it("creates a series and several inherited-author books atomically", async () => {
     const repository = new MemoryLibraryRepository();
     const ids = ["series-new", "book-1", "book-2"];

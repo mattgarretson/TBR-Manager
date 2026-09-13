@@ -16,6 +16,16 @@ export function initials(title: string) {
     .join("");
 }
 
+// Covers are stored as data-URL strings, so string length is a close stand-in for stored bytes.
+export function storedCoverLength(books: { coverImage: string }[]) {
+  return books.reduce((total, book) => total + (book.coverImage.startsWith("data:") ? book.coverImage.length : 0), 0);
+}
+
+export function formatStorageSize(length: number) {
+  if (length < 1024 * 1024) return `${Math.max(1, Math.round(length / 1024))} KB`;
+  return `${(length / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function coverTone(id: string) {
   let hash = 0;
   for (let index = 0; index < id.length; index += 1) {

@@ -367,6 +367,61 @@ describe("Plot Pile behavior", () => {
     expect(repository.snapshot.series[0].tags).toEqual([]);
   });
 
+  it("shrinks stored covers from Settings and reports the space saved", async () => {
+    const user = userEvent.setup();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const largeCover = `data:image/png;base64,${"A".repeat(4000)}`;
+    const shrunkCover = "data:image/jpeg;base64,c21hbGw=";
+    const shrinkCover = vi.fn(async (dataUrl: string) => dataUrl === largeCover ? shrunkCover : dataUrl);
+    const repository = new MemoryLibraryRepository({
+      ...snapshot,
+      books: [
+        { ...book, coverImage: largeCover },
+        { ...book, id: "book-2", title: "Book Two", coverImage: "data:image/png;base64,abc" },
+        { ...book, id: "book-3", title: "Book Three", coverImage: "" },
+      ],
+    });
+    const service = new LibraryService(repository, { now: () => new Date("2027-02-01T00:00:00.000Z") });
+    render(<PlotPileApp controllerDependencies={{ repository, service, shrinkCover }} />);
+    await screen.findByText("Book One");
+    await user.click(screen.getByRole("button", { name: "More" }));
+    expect(screen.getByText("Covers use 4 KB")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Shrink covers" }));
+
+    expect(confirm.mock.calls[0][0]).toContain("Shrink 2 stored covers");
+    expect(await screen.findByText("✓ Shrunk 1 cover · saved 4 KB")).toBeTruthy();
+    const stored = (id: string) => repository.snapshot.books.find((item) => item.id === id);
+    expect(stored("book-1")).toMatchObject({ coverImage: shrunkCover, updatedAt: timestamp });
+    expect(stored("book-2")?.coverImage).toBe("data:image/png;base64,abc");
+    expect(shrinkCover).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Covers use 1 KB")).toBeTruthy();
+  });
+
+  it("shrinks full-size covers that come back from a restored backup", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const shrunkCover = "data:image/jpeg;base64,c21hbGw=";
+    const shrinkCover = vi.fn(async () => shrunkCover);
+    const repository = new MemoryLibraryRepository({ books: [], series: [] });
+    const service = new LibraryService(repository, { now: () => new Date(timestamp) });
+    render(<PlotPileApp controllerDependencies={{ repository, service, shrinkCover }} />);
+    await screen.findByRole("heading", { name: "My TBR" });
+    await user.click(screen.getByRole("button", { name: "More" }));
+    const backup = service.createBackup({
+      ...snapshot,
+      books: [{ ...book, coverImage: `data:image/png;base64,${"A".repeat(4000)}` }],
+    });
+
+    await user.upload(
+      screen.getByLabelText("Choose backup"),
+      new File([JSON.stringify(backup)], "backup.json", { type: "application/json" }),
+    );
+
+    expect(await screen.findByText("✓ Backup restored · shrunk 1 cover")).toBeTruthy();
+    expect(repository.snapshot.books[0].coverImage).toBe(shrunkCover);
+  });
+
   it("edits a book through the controller and validates required fields", async () => {
     const user = userEvent.setup();
     const { repository } = renderApp();

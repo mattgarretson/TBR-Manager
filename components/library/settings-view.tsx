@@ -3,6 +3,7 @@ import { THEMES, type InstallPromptEvent } from "../../app/use-device-settings";
 import { selectStoredTagCounts } from "../../lib/library/selectors";
 import type { Book, Series, ThemeName } from "../../lib/library/types";
 import styles from "./settings-view.module.css";
+import { formatStorageSize, storedCoverLength } from "./view-utils";
 
 export type DeviceSettings = {
   theme: ThemeName;
@@ -25,6 +26,7 @@ export function SettingsView({
   onDownload,
   onAddFromLinks,
   onImport,
+  onShrinkCovers,
   onErase,
   onRenameTag,
   onDeleteTag,
@@ -37,11 +39,13 @@ export function SettingsView({
   onDownload: () => void;
   onAddFromLinks: () => void;
   onImport: (event: ChangeEvent<HTMLInputElement>) => void;
+  onShrinkCovers: () => void;
   onErase: () => void;
   onRenameTag: (currentTag: string, nextTag: string) => Promise<void>;
   onDeleteTag: (tag: string) => Promise<void>;
 }) {
   const tagCounts = useMemo(() => selectStoredTagCounts(books, series), [books, series]);
+  const coverLength = useMemo(() => storedCoverLength(books), [books]);
   const [editingTag, setEditingTag] = useState("");
   const [renameValue, setRenameValue] = useState("");
   const lastBackupLabel = lastBackupAt
@@ -98,7 +102,11 @@ export function SettingsView({
         <article className={`settings-card ${styles.card}`}>
           <span className={`settings-icon ${styles.icon}`} aria-hidden="true">▣</span>
           <div><p className="eyebrow">On-device storage</p><h2>{books.length} books · {series.length} series</h2><p>Your library lives in this browser on this phone. It works offline and does not require an account.</p>
-            {device.storagePersistent === true ? <span className={styles.protectedLabel}>✓ Storage protection enabled</span> : device.canPersistStorage && <button className="secondary-button" type="button" onClick={() => void device.protectStorage()}>Protect local storage</button>}
+            {coverLength > 0 && <p className={styles.coverSize}>Covers use {formatStorageSize(coverLength)}</p>}
+            <div className={styles.storageActions}>
+              {device.storagePersistent === true ? <span className={styles.protectedLabel}>✓ Storage protection enabled</span> : device.canPersistStorage && <button className="secondary-button" type="button" onClick={() => void device.protectStorage()}>Protect local storage</button>}
+              {coverLength > 0 && <button className="secondary-button" type="button" disabled={saving} onClick={onShrinkCovers}>Shrink covers</button>}
+            </div>
           </div>
         </article>
         <article className={`settings-card ${styles.card} ${styles.tagCard}`}>

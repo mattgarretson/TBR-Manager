@@ -28,6 +28,8 @@ import type {
   Series,
 } from "./types";
 
+export type CoverReplacement = { bookId: string; previous: string; next: string };
+
 export type LibraryServiceDependencies = {
   now?: () => Date;
   createId?: () => string;
@@ -239,6 +241,22 @@ export class LibraryService {
   async restoreBooks(books: Book[]) {
     await this.repository.saveBooks(books);
     return this.repository.read();
+  }
+
+  // Swaps in re-encoded covers without touching updatedAt, since the book itself did not change.
+  // A replacement is skipped when the stored cover no longer matches what was shrunk.
+  async replaceCovers(replacements: CoverReplacement[]): Promise<{ snapshot: LibrarySnapshot; replaced: number }> {
+    const snapshot = await this.repository.read();
+    const byId = new Map(replacements.map((item) => [item.bookId, item]));
+    const books = snapshot.books.flatMap((book) => {
+      const replacement = byId.get(book.id);
+      return replacement && book.coverImage === replacement.previous && replacement.next !== replacement.previous
+        ? [{ ...book, coverImage: replacement.next }]
+        : [];
+    });
+    if (!books.length) return { snapshot, replaced: 0 };
+    await this.repository.saveBooks(books);
+    return { snapshot: await this.repository.read(), replaced: books.length };
   }
 
   async renameTag(currentTag: string, nextTag: string) {

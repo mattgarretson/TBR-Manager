@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { IndexedDbLibraryRepository } from "../lib/library/indexeddb-repository";
 import type { LibraryRepository } from "../lib/library/repository";
-import { LibraryService } from "../lib/library/service";
+import { LibraryService, type CoverReplacement } from "../lib/library/service";
 import type { Book, LibrarySnapshot, SaveBookBatchInput, SaveBookInput, SaveSeriesInput } from "../lib/library/types";
 import { currentLocalDate } from "../lib/library/model";
 import { libraryErrorMessage } from "../lib/library/errors";
+import { formatStorageSize, shrinkCoverDataUrl } from "../components/library/view-utils";
 
 const emptySnapshot: LibrarySnapshot = { books: [], series: [] };
 
@@ -12,7 +13,12 @@ export type LibraryControllerDependencies = {
   repository?: LibraryRepository;
   service?: LibraryService;
   bookRemovalUndoMs?: number;
+  shrinkCover?: (dataUrl: string) => Promise<string>;
 };
+
+function coverCount(count: number) {
+  return `${count} ${count === 1 ? "cover" : "covers"}`;
+}
 
 export function useLibraryController(dependencies: LibraryControllerDependencies = {}) {
   const repository = useMemo(
@@ -24,6 +30,7 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     [dependencies.service, repository],
   );
   const bookRemovalUndoMs = dependencies.bookRemovalUndoMs ?? 6_000;
+  const shrinkCover = dependencies.shrinkCover ?? shrinkCoverDataUrl;
   const [snapshot, setSnapshot] = useState<LibrarySnapshot>(emptySnapshot);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -167,10 +174,41 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     setBackupNudgeSnoozedUntil(snoozedUntil);
   }
 
+  // Covers saved before downscaling existed can be full-size photos; re-encode them one at a time
+  // so a big library doesn't decode every image at once, and keep only the ones that got smaller.
+  async function shrinkStoredCovers(books: Book[]) {
+    const replacements: CoverReplacement[] = [];
+    let savedLength = 0;
+    for (const book of books) {
+      if (!book.coverImage.startsWith("data:")) continue;
+      const next = await shrinkCover(book.coverImage);
+      if (next.length >= book.coverImage.length) continue;
+      replacements.push({ bookId: book.id, previous: book.coverImage, next });
+      savedLength += book.coverImage.length - next.length;
+    }
+    return { ...(await service.replaceCovers(replacements)), savedLength };
+  }
+
+  async function shrinkCovers() {
+    const result = await command(() => shrinkStoredCovers(snapshot.books));
+    setSnapshot(result.snapshot);
+    setNotice(result.replaced
+      ? `Shrunk ${coverCount(result.replaced)} · saved ${formatStorageSize(result.savedLength)}`
+      : "Covers are already small");
+  }
+
   async function restoreBackup(value: unknown) {
-    const nextSnapshot = await command(() => service.restoreBackup(value));
-    setSnapshot(nextSnapshot);
-    setNotice("Backup restored");
+    const result = await command(async () => {
+      const restored = await service.restoreBackup(value);
+      // The restore already succeeded, so a failed shrink must not report it as failed.
+      try {
+        return await shrinkStoredCovers(restored.books);
+      } catch {
+        return { snapshot: restored, replaced: 0 };
+      }
+    });
+    setSnapshot(result.snapshot);
+    setNotice(result.replaced ? `Backup restored · shrunk ${coverCount(result.replaced)}` : "Backup restored");
   }
 
   async function erase() {
@@ -203,6 +241,7 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     deleteSeries,
     renameTag,
     deleteTag,
+    shrinkCovers,
     downloadBackup,
     dismissBackupNudge,
     restoreBackup,
