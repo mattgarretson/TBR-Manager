@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { BookEditor } from "../components/library/book-editor";
 import type { CoverSearchClient } from "../components/library/cover-search";
@@ -279,9 +277,11 @@ export function PlotPileApp({
         />
       )}
 
-      {library.pendingBookRemoval ? (
+      {library.pendingBookRemovals.length ? (
         <div className="toast undo-toast" role="status">
-          <span>Removed “{library.pendingBookRemoval.title}”</span>
+          <span>{library.pendingBookRemovals.length === 1
+            ? `Removed “${library.pendingBookRemovals[0].title}”`
+            : `Removed ${library.pendingBookRemovals.length} books`}</span>
           <button type="button" disabled={library.saving} onClick={() => void library.undoBookRemoval()}>Undo</button>
         </div>
       ) : library.notice && <div className="toast" role="status">✓ {library.notice}</div>}

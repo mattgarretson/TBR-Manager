@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { THEMES, type InstallPromptEvent } from "../../app/use-device-settings";
 import { selectStoredTagCounts } from "../../lib/library/selectors";

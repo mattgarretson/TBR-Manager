@@ -167,10 +167,9 @@ describe("IndexedDbLibraryRepository", () => {
     expect((await repository.read()).books).toEqual([book]);
   });
 
-  it("replaces, idempotently merges, and stores metadata", async () => {
+  it("replaces the library and stores metadata", async () => {
     const repository = new IndexedDbLibraryRepository();
     await repository.replace(snapshot);
-    await repository.merge(snapshot);
     expect(await repository.read()).toEqual(snapshot);
     expect(LAST_BACKUP_AT_META).toBe("last-backup-at");
     expect(BACKUP_NUDGE_SNOOZED_UNTIL_META).toBe("backup-nudge-snoozed-until");

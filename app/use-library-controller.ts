@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { IndexedDbLibraryRepository } from "../lib/library/indexeddb-repository";
 import type { LibraryRepository } from "../lib/library/repository";
@@ -31,7 +29,7 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [pendingBookRemoval, setPendingBookRemoval] = useState<Book | null>(null);
+  const [pendingBookRemovals, setPendingBookRemovals] = useState<Book[]>([]);
   const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
   const [backupNudgeSnoozedUntil, setBackupNudgeSnoozedUntil] = useState<string | null>(null);
 
@@ -65,11 +63,12 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
+  // Every removal restarts the undo window, and Undo restores everything removed within it.
   useEffect(() => {
-    if (!pendingBookRemoval) return;
-    const timeout = window.setTimeout(() => setPendingBookRemoval(null), bookRemovalUndoMs);
+    if (!pendingBookRemovals.length) return;
+    const timeout = window.setTimeout(() => setPendingBookRemovals([]), bookRemovalUndoMs);
     return () => window.clearTimeout(timeout);
-  }, [bookRemovalUndoMs, pendingBookRemoval]);
+  }, [bookRemovalUndoMs, pendingBookRemovals]);
 
   async function command<T>(action: () => Promise<T>) {
     setSaving(true);
@@ -116,16 +115,16 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     const nextSnapshot = await command(() => service.deleteBook(id));
     setSnapshot(nextSnapshot);
     setNotice("");
-    setPendingBookRemoval(removedBook);
+    setPendingBookRemovals((current) => [...current, removedBook]);
   }
 
   async function undoBookRemoval() {
-    const removedBook = pendingBookRemoval;
-    if (!removedBook) return;
-    const nextSnapshot = await command(() => service.restoreBook(removedBook));
+    const removedBooks = pendingBookRemovals;
+    if (!removedBooks.length) return;
+    const nextSnapshot = await command(() => service.restoreBooks(removedBooks));
     setSnapshot(nextSnapshot);
-    setPendingBookRemoval(null);
-    setNotice("Book restored");
+    setPendingBookRemovals((current) => current.filter((item) => !removedBooks.includes(item)));
+    setNotice(removedBooks.length === 1 ? "Book restored" : `${removedBooks.length} books restored`);
   }
 
   async function deleteSeries(id: string) {
@@ -186,7 +185,7 @@ export function useLibraryController(dependencies: LibraryControllerDependencies
     saving,
     error,
     notice,
-    pendingBookRemoval,
+    pendingBookRemovals,
     lastBackupAt,
     showBackupNudge: service.shouldShowBackupNudge(
       snapshot.books.length,

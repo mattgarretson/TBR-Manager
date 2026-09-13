@@ -13,7 +13,6 @@ export interface LibraryRepository {
   deleteBook(id: string): Promise<void>;
   deleteSeries(id: string, updatedAt: string): Promise<void>;
   replace(snapshot: LibrarySnapshot): Promise<void>;
-  merge(snapshot: LibrarySnapshot): Promise<void>;
   readMeta(key: string): Promise<string | null>;
   writeMeta(key: string, value: string): Promise<void>;
 }

@@ -228,21 +228,6 @@ export class IndexedDbLibraryRepository implements LibraryRepository {
     }
   }
 
-  async merge(snapshot: LibrarySnapshot) {
-    const database = await openDatabase();
-    try {
-      const transaction = database.transaction([BOOKS_STORE, SERIES_STORE], "readwrite");
-      const completed = transactionDone(transaction);
-      const bookStore = transaction.objectStore(BOOKS_STORE);
-      const seriesStore = transaction.objectStore(SERIES_STORE);
-      snapshot.series.forEach((item) => seriesStore.put(item));
-      snapshot.books.forEach((item) => bookStore.put(item));
-      await completed;
-    } finally {
-      database.close();
-    }
-  }
-
   async readMeta(key: string) {
     const database = await openDatabase();
     try {

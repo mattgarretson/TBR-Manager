@@ -109,6 +109,12 @@ export class LibraryService {
       const previousSeries = snapshot.series.find((item) => item.id === existing.seriesId);
       tags = normalizeTags([...tags, ...(previousSeries?.tags ?? [])]);
     }
+    // A book never stores its own copy of a tag its series already provides. The editor hides
+    // inherited tags, so a stored copy could not be removed and would linger if the series dropped it.
+    const seriesTags = seriesToCreate?.tags
+      ?? snapshot.series.find((item) => item.id === seriesId)?.tags
+      ?? [];
+    tags = tags.filter((tag) => !seriesTags.includes(tag));
     const book: Book = {
       id: existing?.id ?? this.createId(),
       title,
@@ -230,8 +236,8 @@ export class LibraryService {
     return this.repository.read();
   }
 
-  async restoreBook(book: Book) {
-    await this.repository.commitBook(book);
+  async restoreBooks(books: Book[]) {
+    await this.repository.saveBooks(books);
     return this.repository.read();
   }
 

@@ -21,6 +21,7 @@ Open Library cover search (using only title and author) and the selected cover d
 - Creating a series with a batch of books writes the series and every generated book in one IndexedDB transaction.
 - A series author is a default copied onto new books; each book keeps its own author so exceptions and later unlinking remain safe.
 - Series tags are inherited at read time by every linked book and participate in book search, filters, and tag counts. Book-specific tags remain independently editable.
+- Saving a book drops any stored tag its series already provides, so a book's own tags never silently duplicate inherited ones.
 - Deleting a series and unlinking its books is one transaction; inherited series tags are copied to the unlinked books so their classification is not lost.
 - Release dates are empty or valid `YYYY-MM-DD` calendar dates.
 - Backup version 1 remains readable and writable. Older backups without a series author infer it when every linked book has the same author. Duplicate IDs/name keys and impossible dates are rejected before replacing the current library.
@@ -28,7 +29,7 @@ Open Library cover search (using only title and author) and the selected cover d
 ## Hosting
 
 - IndexedDB is bound to the site origin. Changing the hosting address means every user must download a backup on the old address and restore it on the new one — treat the production URL as stable.
-- All URLs in `index.html`, `public/manifest.webmanifest`, and `public/sw.js` are relative so the build runs under a sub-path. The service worker only handles requests inside its own scope.
+- All URLs in `index.html`, `public/manifest.webmanifest`, and `public/sw.js` are relative so the build runs under a sub-path. The service worker only handles requests inside its own scope. Each build stamps the worker with a content hash and its file list, so a deploy precaches the full app under a new cache name and removes the previous build's cache.
 
 ## Change rules
 

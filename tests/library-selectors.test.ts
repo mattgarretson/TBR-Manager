@@ -5,6 +5,7 @@ import {
   selectTagCounts,
   selectVisibleBooks,
 } from "../lib/library/selectors";
+import type { BookSort, SortDirection } from "../lib/library/types";
 import { book, series } from "./fixtures/library";
 
 const standalone = {
@@ -92,6 +93,35 @@ describe("library selectors", () => {
     });
 
     expect(result.map((item) => item.id).sort()).toEqual([...ids].sort());
+  });
+
+  it("keeps each series together and in reading order for both series sorts", () => {
+    const alpha = { ...series, id: "alpha", name: "Alpha", nameKey: "alpha" };
+    const beta = { ...series, id: "beta", name: "Beta", nameKey: "beta" };
+    const books = [
+      { ...book, id: "beta-1", title: "B1", seriesId: "beta", seriesPosition: "1" },
+      { ...book, id: "alpha-10", title: "A10", seriesId: "alpha", seriesPosition: "10" },
+      standalone,
+      { ...book, id: "alpha-2", title: "A2", seriesId: "alpha", seriesPosition: "2" },
+      { ...book, id: "beta-2", title: "B2", seriesId: "beta", seriesPosition: "2" },
+      { ...book, id: "alpha-1", title: "A1", seriesId: "alpha", seriesPosition: "1" },
+    ];
+    const ids = (sort: BookSort, direction: SortDirection) => selectVisibleBooks({
+      books,
+      series: [beta, alpha],
+      query: "",
+      activeTag: "All",
+      shelf: "all",
+      scope: "all",
+      sort,
+      direction,
+      today: "2027-01-01",
+    }).map((item) => item.id);
+
+    expect(ids("series", "asc")).toEqual(["alpha-1", "alpha-2", "alpha-10", "beta-1", "beta-2", "standalone"]);
+    expect(ids("series", "desc")).toEqual(["beta-1", "beta-2", "alpha-1", "alpha-2", "alpha-10", "standalone"]);
+    expect(ids("seriesPosition", "asc")).toEqual(["alpha-1", "alpha-2", "alpha-10", "beta-1", "beta-2", "standalone"]);
+    expect(ids("seriesPosition", "desc")).toEqual(["alpha-10", "alpha-2", "alpha-1", "beta-2", "beta-1", "standalone"]);
   });
 
   it("builds, filters, and sorts series cards", () => {

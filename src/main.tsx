@@ -3,7 +3,7 @@ import "@fontsource-variable/fraunces";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "../app/globals.css";
-import { PlotPileApp } from "../app/page";
+import { PlotPileApp } from "../app/plot-pile-app";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

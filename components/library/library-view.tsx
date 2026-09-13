@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { currentLocalDate, effectiveBookTags } from "../../lib/library/model";
 import { selectTagCounts, selectVisibleBooks } from "../../lib/library/selectors";
@@ -67,7 +65,7 @@ export function LibraryView({
   );
   const incompleteCount = series.filter((item) => item.status === "incomplete").length;
   const unfinishedCount = books.filter((item) => item.status === "tbr" || item.status === "reading").length;
-  const finishedCount = books.filter((item) => item.status === "finished").length;
+  const doneCount = books.filter((item) => item.status === "finished" || item.status === "dnf").length;
 
   useEffect(() => {
     writeLibraryViewPreferences(preferences);
@@ -85,7 +83,7 @@ export function LibraryView({
         <div><p className="eyebrow">On this device</p><h1 id="library-title">My TBR</h1></div>
         <div className="mini-stats" aria-label="Library summary">
           <span><strong>{unfinishedCount}</strong> books</span>
-          <span><strong>{finishedCount}</strong> read</span>
+          <span><strong>{doneCount}</strong> done</span>
           <span><strong>{series.length}</strong> series</span>
           <span><strong>{incompleteCount}</strong> waiting</span>
         </div>

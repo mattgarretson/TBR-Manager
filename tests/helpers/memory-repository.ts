@@ -87,11 +87,6 @@ export class MemoryLibraryRepository implements LibraryRepository {
     this.snapshot = clone(snapshot);
   }
 
-  async merge(snapshot: LibrarySnapshot) {
-    for (const series of snapshot.series) await this.saveSeries(series);
-    for (const book of snapshot.books) await this.commitBook(book);
-  }
-
   async readMeta(key: string) {
     return this.metadata.get(key) ?? null;
   }

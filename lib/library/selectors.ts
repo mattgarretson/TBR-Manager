@@ -85,9 +85,19 @@ export function selectVisibleBooks(input: {
       const rightSeries = right.seriesId ? seriesMap.get(right.seriesId)?.name ?? "" : "";
       if (sort === "title") return compareText(left.title, right.title, direction);
       if (sort === "author") return compareText(left.author, right.author, direction);
-      if (sort === "series") return compareOptional(leftSeries, rightSeries, direction);
+      // Both series sorts keep each series together and standalone books last. "series" flips
+      // the order of the series; "seriesPosition" flips the reading order inside each one.
+      if (sort === "series") {
+        return compareOptional(leftSeries, rightSeries, direction)
+          || compareOptional(left.seriesPosition, right.seriesPosition, "asc")
+          || compareText(left.title, right.title, "asc");
+      }
       if (sort === "releaseDate") return compareOptional(left.releaseDate, right.releaseDate, direction);
-      if (sort === "seriesPosition") return compareOptional(left.seriesPosition, right.seriesPosition, direction);
+      if (sort === "seriesPosition") {
+        return compareOptional(leftSeries, rightSeries, "asc")
+          || compareOptional(left.seriesPosition, right.seriesPosition, direction)
+          || compareText(left.title, right.title, "asc");
+      }
       return compareText(left.createdAt, right.createdAt, direction);
     });
 }

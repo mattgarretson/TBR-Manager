@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, type FormEvent } from "react";
 import { findDuplicateBook } from "../../lib/library/model";
 import type {

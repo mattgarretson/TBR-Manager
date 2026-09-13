@@ -1,9 +1,7 @@
-"use client";
-
 import { useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import {
   findDuplicateBook,
-  MAX_COVER_FILE_BYTES,
+  MAX_COVER_DATA_URL_LENGTH,
   nextSeriesPosition,
   normalizeTags,
   seriesNameKey,
@@ -20,9 +18,11 @@ import type { SharedBookDraft } from "../../lib/share/parse";
 import { DialogShell } from "./dialog-shell";
 import { CoverSearch, type CoverSearchClient } from "./cover-search";
 import { TagSuggestions } from "./tag-suggestions";
-import { coverTone, readImage } from "./view-utils";
+import { coverTone, readCoverImage, shrinkCoverDataUrl } from "./view-utils";
 
 const NEW_SERIES_VALUE = "__new_series__";
+// Photos are downscaled before they are stored, so the upload limit can exceed the stored-cover limit.
+const MAX_COVER_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 type BookDraft = {
   title: string;
@@ -158,12 +158,17 @@ export function BookEditor({
       setError("Use a JPG, PNG, WebP, or GIF cover image.");
       return;
     }
-    if (file.size > MAX_COVER_FILE_BYTES) {
-      setError("Cover images must be smaller than 5 MB.");
+    if (file.size > MAX_COVER_UPLOAD_BYTES) {
+      setError("Cover images must be smaller than 20 MB.");
       return;
     }
     try {
-      updateDraft({ coverImage: await readImage(file) });
+      const coverImage = await readCoverImage(file);
+      if (coverImage.length > MAX_COVER_DATA_URL_LENGTH) {
+        setError("That cover is too large to store. Try a smaller image.");
+        return;
+      }
+      updateDraft({ coverImage });
       clearError();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not read that cover image.");
@@ -272,7 +277,7 @@ export function BookEditor({
           <summary><span>More details</span><small>Cover, notes, and tags</small></summary>
           <div className="more-details-content">
             <div className="cover-editor">
-              <label className={`cover-picker cover-tone-${coverTone((book?.id ?? draft.title) || "new")}`}>
+              <label className={`cover-picker cover-tone-${coverTone(book?.id ?? "new")}`}>
                 {draft.coverImage ? (
                   <img src={draft.coverImage} alt="Selected cover preview" />
                 ) : <span><b>＋</b>Add cover</span>}
@@ -285,7 +290,7 @@ export function BookEditor({
                 client={coverClient}
                 setError={setError}
                 clearError={clearError}
-                onPick={(dataUrl) => updateDraft({ coverImage: dataUrl })}
+                onPick={async (dataUrl) => updateDraft({ coverImage: await shrinkCoverDataUrl(dataUrl) })}
               />
             </div>
             <label className="form-field"><span>Why did you want to read it? <small>Optional</small></span><textarea value={draft.reason} onChange={(event) => updateDraft({ reason: event.target.value })} rows={4} placeholder="What sold you on it?" /></label>

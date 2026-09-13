@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, type FormEvent, type KeyboardEvent } from "react";
 import { normalizeTags } from "../../lib/library/model";
 import type {

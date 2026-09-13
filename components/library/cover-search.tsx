@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import {
   coverImageUrl,
@@ -30,7 +28,7 @@ export function CoverSearch({
 }: {
   title: string;
   author: string;
-  onPick: (dataUrl: string) => void;
+  onPick: (dataUrl: string) => void | Promise<void>;
   setError: (message: string) => void;
   clearError: () => void;
   client?: CoverSearchClient;
@@ -58,7 +56,7 @@ export function CoverSearch({
     clearError();
     setDownloadingCoverId(coverId);
     try {
-      onPick(await client.fetchCoverDataUrl(coverId));
+      await onPick(await client.fetchCoverDataUrl(coverId));
       setCandidates([]);
       setStatus("idle");
     } catch (caught) {

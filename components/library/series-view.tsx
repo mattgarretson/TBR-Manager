@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { currentLocalDate } from "../../lib/library/model";
 import { selectAllSeriesCards, selectSeriesCards } from "../../lib/library/selectors";
@@ -36,6 +34,7 @@ export function SeriesView({
     [allCards, direction, query, scope, sort],
   );
   const incompleteCount = series.filter((item) => item.status === "incomplete").length;
+  const completeCount = series.length - incompleteCount;
   const upcomingCount = allCards.filter(({ next }) => Boolean(next)).length;
 
   useEffect(() => {
@@ -58,7 +57,7 @@ export function SeriesView({
           {([
             ["all", `All ${series.length}`],
             ["incomplete", `Ongoing ${incompleteCount}`],
-            ["complete", "Finished"],
+            ["complete", `Finished ${completeCount}`],
             ["upcoming", `Upcoming ${upcomingCount}`],
           ] as [SeriesScope, string][]).map(([value, label]) => (
             <button className={scope === value ? "active" : ""} type="button" onClick={() => setPreferences((current) => ({ ...current, scope: value }))} aria-pressed={scope === value} key={value}>{label}</button>

@@ -1,7 +1,7 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { PlotPileApp } from "../app/page";
+import { PlotPileApp } from "../app/plot-pile-app";
 import type { CoverSearchClient } from "../components/library/cover-search";
 import {
   LIBRARY_VIEW_PREFERENCES_KEY,
@@ -411,6 +411,24 @@ describe("Plot Pile behavior", () => {
 
     await user.click(screen.getByRole("button", { name: "Undo" }));
     await waitFor(() => expect(repository.snapshot.books).toEqual(snapshot.books));
+  });
+
+  it("restores every book removed before the undo expires", async () => {
+    const user = userEvent.setup();
+    const secondBook = { ...book, id: "book-2", title: "Book Two", seriesPosition: "2" };
+    const { repository } = renderApp({ ...snapshot, books: [book, secondBook] });
+    await screen.findByText("Book Two");
+
+    await user.click(screen.getAllByRole("button", { name: "Remove book" })[0]);
+    await waitFor(() => expect(repository.snapshot.books).toHaveLength(1));
+    await user.click(screen.getByRole("button", { name: "Remove book" }));
+    await waitFor(() => expect(repository.snapshot.books).toEqual([]));
+    expect(screen.getByText("Removed 2 books")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect([...repository.snapshot.books].sort((a, b) => a.id.localeCompare(b.id)))
+      .toEqual([book, secondBook]));
+    expect(await screen.findByText(/2 books restored/)).toBeTruthy();
   });
 
   it("expires the undo and keeps the removed book absent after a reload", async () => {

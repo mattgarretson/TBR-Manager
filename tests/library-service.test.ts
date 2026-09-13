@@ -129,6 +129,21 @@ describe("LibraryService", () => {
     expect(repository.snapshot.books[0]).toMatchObject({ seriesId: null, tags: ["slow burn", "fantasy"] });
   });
 
+  it("drops book tags that the book's series already provides", async () => {
+    const romance = { ...series, id: "series-2", name: "Court Two", nameKey: "court two", tags: ["fantasy", "romance"] };
+    const repository = new MemoryLibraryRepository({
+      books: [{ ...book, tags: ["fantasy", "slow burn"] }],
+      series: [series, romance],
+    });
+    const service = new LibraryService(repository, { now: () => new Date(timestamp) });
+
+    await service.saveBook({ ...book, tags: ["fantasy", "slow burn"] });
+    expect(repository.snapshot.books[0].tags).toEqual(["slow burn"]);
+
+    await service.saveBook({ ...book, tags: ["romance", "slow burn"], seriesId: romance.id });
+    expect(repository.snapshot.books[0].tags).toEqual(["slow burn"]);
+  });
+
   it("renames only affected records and bumps their updated timestamps", async () => {
     const unaffectedBook = {
       ...book,
