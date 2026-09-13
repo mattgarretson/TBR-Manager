@@ -152,6 +152,9 @@ describe("Plot Pile behavior", () => {
     expect(screen.getByRole("button", { name: /^Bookshop/ }).getAttribute("aria-pressed")).toBe("true");
     await user.click(screen.getByRole("button", { name: /^Forest/ }));
     expect(document.documentElement.dataset.theme).toBe("forest");
+    await user.click(screen.getByRole("button", { name: /^Nightshade/ }));
+    expect(document.documentElement.dataset.theme).toBe("nightshade");
+    expect(window.localStorage.getItem("plot-pile-theme")).toBe("nightshade");
   });
 
   it("shows the backup nudge for stale metadata, hides fresh or snoozed states, and records dismissal", async () => {

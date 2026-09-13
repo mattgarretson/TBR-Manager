@@ -63,4 +63,4 @@ Treat these as frozen unless you are deliberately versioning them:
 
 ## Styling
 
-`app/globals.css` is a single hand-written stylesheet with semantic class names (`app-shell`, `card-grid`, `primary-button`) and four themes selected via `html[data-theme="..."]`. Tailwind is imported (via PostCSS) for its base layer only — do not introduce utility-class styling. `settings-view.module.css` is the one CSS module.
+`app/globals.css` is a single hand-written stylesheet with semantic class names (`app-shell`, `card-grid`, `primary-button`) and six themes (four light, two dark: `graphite`, `nightshade`) selected via `html[data-theme="..."]`. Colors go through the custom properties on `:root`; don't hardcode hex values in rules, or they break in the dark themes — dark themes use light accents, so text on `--berry`/`--ink` fills uses `--on-berry`/`--on-ink`. Tailwind is imported (via PostCSS) for its base layer only — do not introduce utility-class styling. `settings-view.module.css` is the one CSS module.

@@ -51,12 +51,18 @@
 .swatch.lavender i:nth-child(1) { background: #69406f; }
 .swatch.lavender i:nth-child(2) { background: #f4eef7; }
 .swatch.lavender i:nth-child(3) { background: #c66e83; }
+.swatch.graphite i:nth-child(1) { background: #f2b544; }
+.swatch.graphite i:nth-child(2) { background: #141414; }
+.swatch.graphite i:nth-child(3) { background: #f08a6c; }
+.swatch.nightshade i:nth-child(1) { background: #c9a2ff; }
+.swatch.nightshade i:nth-child(2) { background: #17121f; }
+.swatch.nightshade i:nth-child(3) { background: #f29bb8; }
 
 .protectedLabel { display: inline-block; padding: 8px 11px; border-radius: 999px; background: var(--success-bg); color: var(--success-text); font-size: 0.64rem; font-weight: 800; }
 .fileButton { width: fit-content; }
 .fileButton input { display: none; }
-.dangerCard { border-color: #dfb8b2; }
-.dangerCard :global(.settings-icon) { background: #8b3038; }
+.dangerCard { border-color: var(--danger-border); }
+.dangerCard :global(.settings-icon) { background: var(--danger-text); }
 .tagCard { grid-column: 1 / -1; }
 .tagList { display: grid; gap: 7px; }
 .tagRow { min-width: 0; padding: 9px 0; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 9px; border-top: 1px solid var(--line); }
@@ -77,11 +83,12 @@
   .installCard,
   .themeCard,
   .dangerCard { grid-column: 1 / -1; }
-  .themeOptions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .themeOptions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (min-width: 1050px) {
   .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .themeOptions { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .installCard,
   .dangerCard { grid-column: auto; }
 }

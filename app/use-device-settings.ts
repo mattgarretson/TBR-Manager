@@ -12,6 +12,8 @@ export const THEMES: { id: ThemeName; name: string; description: string; color: 
   { id: "forest", name: "Forest", description: "Sage & moss", color: "#355d45" },
   { id: "ocean", name: "Ocean", description: "Teal & sea glass", color: "#1e6072" },
   { id: "lavender", name: "Lavender", description: "Plum & lilac", color: "#69406f" },
+  { id: "graphite", name: "Graphite", description: "Dark · charcoal & marigold", color: "#141414" },
+  { id: "nightshade", name: "Nightshade", description: "Dark · violet & orchid", color: "#17121f" },
 ];
 
 export function useDeviceSettings(showNotice: (message: string) => void) {
