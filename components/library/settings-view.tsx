@@ -99,7 +99,7 @@ export function SettingsView({
             </div>
           </div>
         </article>
-        <article className={`settings-card ${styles.card}`}>
+        <article className={`settings-card ${styles.card} ${styles.storageCard}`}>
           <span className={`settings-icon ${styles.icon}`} aria-hidden="true">▣</span>
           <div><p className="eyebrow">On-device storage</p><h2>{books.length} books · {series.length} series</h2><p>Your library lives in this browser on this phone. It works offline and does not require an account.</p>
             {coverLength > 0 && <p className={styles.coverSize}>Covers use {formatStorageSize(coverLength)}</p>}
@@ -135,15 +135,15 @@ export function SettingsView({
             ) : <p className={styles.emptyTags}>Tags added to books or series will appear here.</p>}
           </div>
         </article>
-        <article className={`settings-card ${styles.card}`}>
+        <article className={`settings-card ${styles.card} ${styles.linksCard}`}>
           <span className={`settings-icon ${styles.icon}`} aria-hidden="true">↗</span>
           <div><p className="eyebrow">Tab cleanup</p><h2>Add from links</h2><p>Paste a group of Goodreads, store, or social links and review them before adding the books.</p><button className="secondary-button" type="button" onClick={onAddFromLinks}>Add from links</button></div>
         </article>
-        <article className={`settings-card ${styles.card}`}>
+        <article className={`settings-card ${styles.card} ${styles.backupCard}`}>
           <span className={`settings-icon ${styles.icon}`} aria-hidden="true">⇩</span>
           <div><p className="eyebrow">Backup</p><h2>Download a copy</h2><p>The backup includes books, series, notes, tags, dates, and uploaded covers.</p><p className={styles.lastBackup}>{lastBackupLabel ? `Last backup: ${lastBackupLabel}` : "No backup yet"}</p><button className="secondary-button" type="button" onClick={onDownload}>Download backup</button></div>
         </article>
-        <article className={`settings-card ${styles.card}`}>
+        <article className={`settings-card ${styles.card} ${styles.restoreCard}`}>
           <span className={`settings-icon ${styles.icon}`} aria-hidden="true">⇧</span>
           <div><p className="eyebrow">Restore or move</p><h2>Import a backup</h2><p>Use a backup to recover the library or move it to another phone or browser.</p><label className={`secondary-button file-button ${styles.fileButton}`}>Choose backup<input type="file" accept="application/json,.json" onChange={onImport} /></label></div>
         </article>

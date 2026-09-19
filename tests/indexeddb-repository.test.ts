@@ -162,6 +162,7 @@ describe("IndexedDbLibraryRepository", () => {
     delete storedBook.status;
     delete storedBook.finishedDate;
     delete storedBook.sourceUrl;
+    delete storedBook.owned;
     await putStoredBook(storedBook);
 
     expect((await repository.read()).books).toEqual([book]);

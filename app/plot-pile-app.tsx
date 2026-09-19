@@ -119,6 +119,12 @@ export function PlotPileApp({
     } catch {}
   }
 
+  async function toggleBookOwned(book: Book) {
+    try {
+      await library.saveBook({ ...book, owned: !book.owned });
+    } catch {}
+  }
+
   async function removeSeries(item: Series, linkedCount: number) {
     const warning = linkedCount
       ? `Delete “${item.name}”? Its ${linkedCount} linked ${linkedCount === 1 ? "book" : "books"} will become standalone.`
@@ -193,6 +199,7 @@ export function PlotPileApp({
           onAddBook={() => openNewBook()}
           onEditBook={openEditBook}
           onChangeBookStatus={(book, status) => void changeBookStatus(book, status)}
+          onToggleOwned={(book) => void toggleBookOwned(book)}
           onRemoveBook={(book) => void removeBook(book)}
           onOpenSeries={(name) => {
             setSeriesFocus(name);

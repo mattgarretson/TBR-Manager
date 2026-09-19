@@ -114,12 +114,17 @@ describe("library domain model", () => {
     delete legacyBook.status;
     delete legacyBook.finishedDate;
     delete legacyBook.sourceUrl;
+    delete legacyBook.owned;
 
     expect(parseBackup({ ...backup, books: [legacyBook] }, timestamp).books[0]).toMatchObject({
       status: "tbr",
       finishedDate: "",
       sourceUrl: "",
+      owned: false,
     });
+    expect(parseBackup({ ...backup, books: [{ ...book, owned: "yes" }] }, timestamp).books[0].owned).toBe(false);
+    const ownedBackup = createBackup([{ ...book, owned: true }], snapshot.series, timestamp);
+    expect(parseBackup(JSON.parse(JSON.stringify(ownedBackup)), timestamp).books[0].owned).toBe(true);
     expect(parseBackup({
       ...backup,
       books: [{ ...book, status: "paused", sourceUrl: "javascript:alert(1)" }],

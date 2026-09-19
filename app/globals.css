@@ -478,7 +478,7 @@ h1,
 }
 
 .backup-nudge {
-  margin-bottom: 13px;
+  margin-top: 20px;
   padding: 10px 11px 10px 13px;
   display: flex;
   align-items: center;
@@ -616,7 +616,12 @@ h1,
 .tag-filter::-webkit-scrollbar { display: none; }
 
 .filter-row { margin-top: 14px; }
+.filter-divider { flex: 0 0 1px; margin: 6px 3px; background: var(--line); }
 .tag-filter { margin-top: 10px; padding-bottom: 21px; }
+
+/* With no tags yet the tag row is absent, so keep its gap below the scope filters. */
+.filter-row + .card-grid,
+.filter-row + .empty-state { margin-top: 21px; }
 
 .filter-row button,
 .tag-filter button,
@@ -704,7 +709,8 @@ h1,
 }
 
 .cover {
-  min-height: 170px;
+  aspect-ratio: 2 / 3;
+  align-self: start;
   border-radius: 7px 12px 12px 7px;
   overflow: hidden;
   box-shadow: inset 5px 0 rgba(255, 255, 255, 0.14), 5px 7px 13px rgba(47, 29, 24, 0.15);
@@ -721,7 +727,6 @@ h1,
 
 .cover-placeholder {
   height: 100%;
-  min-height: 170px;
   padding: 20px 8px 13px;
   display: flex;
   flex-direction: column;
@@ -735,7 +740,7 @@ h1,
 }
 
 .cover-placeholder span {
-  margin-top: 38px;
+  margin-top: 24%;
   font-family: var(--font-fraunces), serif;
   font-size: 1.7rem;
   font-weight: 760;
@@ -784,6 +789,7 @@ h1,
 .series-link,
 .standalone-badge,
 .status-badge,
+.ownership-toggle,
 .book-meta time,
 .source-link {
   min-height: 23px;
@@ -805,6 +811,10 @@ h1,
 .status-badge.dnf { background: var(--dnf-bg); color: var(--dnf-text); }
 .book-meta time { border: 1px solid var(--line); color: var(--muted); }
 .source-link { border: 1px solid var(--line); color: var(--berry); text-decoration: none; }
+.ownership-toggle { border: 1px dashed var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+.ownership-toggle.owned { border: 1px solid transparent; background: var(--success-bg); color: var(--success-text); }
+.ownership-toggle:hover:not(:disabled) { border-color: var(--success-text); }
+.ownership-toggle:disabled { opacity: 0.58; cursor: wait; }
 
 .book-tags {
   margin-top: 11px;
@@ -846,16 +856,25 @@ h1,
   overflow-wrap: anywhere;
 }
 
+.book-card-footer {
+  margin-top: auto;
+  padding-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .book-status-actions {
-  margin-top: 12px;
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
 }
 
 .book-transition-button {
-  min-height: 38px;
-  padding: 0 12px;
+  min-height: 36px;
+  padding: 0 14px;
   border-radius: 999px;
   font-size: 0.62rem;
   font-weight: 840;
@@ -864,7 +883,14 @@ h1,
 
 .book-transition-button.start,
 .book-transition-button.finish {
-  border: 0;
+  border: 1px solid color-mix(in srgb, var(--berry) 38%, transparent);
+  background: transparent;
+  color: var(--berry);
+  transition: background 0.15s, color 0.15s;
+}
+
+.book-transition-button.start:hover:not(:disabled),
+.book-transition-button.finish:hover:not(:disabled) {
   background: var(--berry);
   color: var(--on-berry);
 }
@@ -882,7 +908,7 @@ h1,
 
 .danger-link {
   width: fit-content;
-  margin-top: 10px;
+  margin-left: auto;
   padding: 0;
   color: var(--danger-muted);
   font-size: 0.56rem;
@@ -1610,15 +1636,14 @@ h1,
   .tag-filter { padding-bottom: 22px; }
 
   .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 19px; }
-  .book-card { padding: 15px; grid-template-columns: 145px minmax(0, 1fr); gap: 18px; border-radius: 19px; }
-  .cover,
-  .cover-placeholder { min-height: 268px; }
-  .cover-placeholder span { margin-top: 70px; font-size: 2.15rem; }
+  .book-card { padding: 16px; grid-template-columns: 136px minmax(0, 1fr); gap: 20px; border-radius: 19px; }
+  .cover-placeholder span { font-size: 2.15rem; }
   .book-card h2 { font-size: 1.48rem; }
   .card-heading p { font-size: 0.76rem; }
   .series-link,
   .standalone-badge,
   .status-badge,
+  .ownership-toggle,
   .book-meta time { min-height: 25px; font-size: 0.58rem; }
   .book-tags button { min-height: 26px; padding: 0 9px; font-size: 0.62rem; }
   .reason-note p { font-size: 0.74rem; }

@@ -130,6 +130,7 @@ export class LibraryService {
       status,
       finishedDate,
       sourceUrl,
+      owned: input.owned ?? existing?.owned ?? false,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
@@ -161,6 +162,7 @@ export class LibraryService {
         status: "tbr",
         finishedDate: "",
         sourceUrl,
+        owned: false,
         createdAt: now,
         updatedAt: now,
       };
@@ -224,6 +226,7 @@ export class LibraryService {
         status: "tbr",
         finishedDate: "",
         sourceUrl: "",
+        owned: false,
         createdAt: now,
         updatedAt: now,
       };

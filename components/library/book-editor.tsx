@@ -36,6 +36,7 @@ type BookDraft = {
   status: BookStatus;
   finishedDate: string;
   sourceUrl: string;
+  owned: boolean;
   newSeriesName: string;
   newSeriesStatus: SeriesStatus;
   newSeriesNextTitle: string;
@@ -62,6 +63,7 @@ function initialDraft(
     status: book?.status ?? "tbr",
     finishedDate: book?.finishedDate ?? "",
     sourceUrl: book?.sourceUrl ?? prefill?.sourceUrl ?? "",
+    owned: book?.owned ?? false,
     newSeriesName: "",
     newSeriesStatus: "incomplete",
     newSeriesNextTitle: "",
@@ -189,6 +191,7 @@ export function BookEditor({
       status: draft.status,
       finishedDate: draft.finishedDate,
       sourceUrl: draft.sourceUrl,
+      owned: draft.owned,
       newSeries: draft.seriesId === NEW_SERIES_VALUE ? {
         name: draft.newSeriesName,
         author: draft.author,
@@ -266,6 +269,7 @@ export function BookEditor({
               finishedDate: status === "finished" || status === "dnf" ? draft.finishedDate : "",
             });
           }}><option value="tbr">To read</option><option value="reading">Reading</option><option value="finished">Finished</option><option value="dnf">Didn&apos;t finish</option></select></label>
+          <label className="form-field"><span>My copy</span><select value={draft.owned ? "owned" : "unowned"} onChange={(event) => updateDraft({ owned: event.target.value === "owned" })}><option value="unowned">Still to buy</option><option value="owned">Own it</option></select></label>
           {(draft.status === "finished" || draft.status === "dnf") && <label className="form-field"><span>Finished date <small>Optional; defaults to today</small></span><input type="date" value={draft.finishedDate} onChange={(event) => updateDraft({ finishedDate: event.target.value })} /></label>}
         </div>
         {draft.seriesId && draft.seriesId !== NEW_SERIES_VALUE && <label className="form-field compact-field"><span>Position in series</span><input value={draft.seriesPosition} onChange={(event) => updateDraft({ seriesPosition: event.target.value })} placeholder="1, 2, 2.5, novella…" /></label>}

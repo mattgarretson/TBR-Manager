@@ -177,6 +177,7 @@ export function createBackup(
       status: normalizeBookStatus(book.status),
       finishedDate: typeof book.finishedDate === "string" ? book.finishedDate : "",
       sourceUrl: normalizeSourceUrl(book.sourceUrl),
+      owned: book.owned === true,
     })),
     series: [...series],
   };
@@ -258,6 +259,7 @@ export function parseBackup(value: unknown, now = new Date().toISOString()): Lib
       status: normalizeBookStatus(item.status),
       finishedDate: validateOptionalDate(requiredText(item.finishedDate), "book finished date"),
       sourceUrl: normalizeSourceUrl(item.sourceUrl),
+      owned: item.owned === true,
       createdAt: requiredText(item.createdAt, now),
       updatedAt: requiredText(item.updatedAt, now),
     };

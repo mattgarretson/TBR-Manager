@@ -1,6 +1,7 @@
 import { effectiveBookTags, nextSeriesRelease, sortSeriesBooks } from "./model";
 import type {
   Book,
+  BookOwnership,
   BookScope,
   BookShelf,
   BookSort,
@@ -50,11 +51,12 @@ export function selectVisibleBooks(input: {
   activeTag: string;
   shelf: BookShelf;
   scope: BookScope;
+  ownership?: BookOwnership;
   sort: BookSort;
   direction: SortDirection;
   today: string;
 }): Book[] {
-  const { books, series, query, activeTag, shelf, scope, sort, direction, today } = input;
+  const { books, series, query, activeTag, shelf, scope, ownership = "all", sort, direction, today } = input;
   const seriesMap = new Map(series.map((item) => [item.id, item]));
   const needle = query.trim().toLocaleLowerCase("en-US");
   return books
@@ -71,6 +73,7 @@ export function selectVisibleBooks(input: {
         (scope === "complete" && linkedSeries?.status === "complete") ||
         (scope === "incomplete" && linkedSeries?.status === "incomplete") ||
         (scope === "upcoming" && Boolean(book.releaseDate && book.releaseDate >= today));
+      const ownershipMatches = ownership === "all" || (ownership === "owned") === book.owned;
       const tagMatches = activeTag === "All" || tags.includes(activeTag);
       const searchMatches =
         !needle ||
@@ -78,7 +81,7 @@ export function selectVisibleBooks(input: {
           .join(" ")
           .toLocaleLowerCase("en-US")
           .includes(needle);
-      return shelfMatches && scopeMatches && tagMatches && searchMatches;
+      return shelfMatches && scopeMatches && ownershipMatches && tagMatches && searchMatches;
     })
     .sort((left, right) => {
       const leftSeries = left.seriesId ? seriesMap.get(left.seriesId)?.name ?? "" : "";

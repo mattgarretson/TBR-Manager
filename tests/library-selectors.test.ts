@@ -95,6 +95,30 @@ describe("library selectors", () => {
     expect(result.map((item) => item.id).sort()).toEqual([...ids].sort());
   });
 
+  it.each([
+    ["all", ["bought", "wanted"]],
+    ["owned", ["bought"]],
+    ["unowned", ["wanted"]],
+  ] as const)("filters %s ownership", (ownership, ids) => {
+    const result = selectVisibleBooks({
+      books: [
+        { ...standalone, id: "bought", title: "Bought", owned: true },
+        { ...standalone, id: "wanted", title: "Wanted", owned: false },
+      ],
+      series: [series],
+      query: "",
+      activeTag: "All",
+      shelf: "all",
+      scope: "all",
+      ownership,
+      sort: "title",
+      direction: "asc",
+      today: "2027-01-01",
+    });
+
+    expect(result.map((item) => item.id)).toEqual(ids);
+  });
+
   it("keeps each series together and in reading order for both series sorts", () => {
     const alpha = { ...series, id: "alpha", name: "Alpha", nameKey: "alpha" };
     const beta = { ...series, id: "beta", name: "Beta", nameKey: "beta" };

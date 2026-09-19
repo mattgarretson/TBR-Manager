@@ -9,10 +9,11 @@ const SERIES_STORE = "series";
 const META_STORE = "meta";
 
 type MetaRecord = { key: string; value: string };
-type StoredBook = Omit<Book, "status" | "finishedDate" | "sourceUrl"> & {
+type StoredBook = Omit<Book, "status" | "finishedDate" | "sourceUrl" | "owned"> & {
   status?: unknown;
   finishedDate?: unknown;
   sourceUrl?: unknown;
+  owned?: unknown;
 };
 
 function requestValue<T>(request: IDBRequest<T>) {
@@ -69,6 +70,7 @@ export class IndexedDbLibraryRepository implements LibraryRepository {
         status: normalizeBookStatus(item.status),
         finishedDate: typeof item.finishedDate === "string" ? item.finishedDate : "",
         sourceUrl: normalizeSourceUrl(item.sourceUrl),
+        owned: item.owned === true,
       }));
       const series = storedSeries.map((item) => {
         const linkedAuthors = [

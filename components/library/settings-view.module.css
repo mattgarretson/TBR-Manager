@@ -80,15 +80,23 @@
 @media (min-width: 700px) {
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
   .card { padding: 21px; }
-  .installCard,
   .themeCard,
-  .dangerCard { grid-column: 1 / -1; }
+  .tagCard { grid-column: 1 / -1; }
+  .themeCard { order: 1; }
+  .installCard { order: 2; }
+  .storageCard { order: 3; }
+  .backupCard { order: 4; }
+  .restoreCard { order: 5; }
+  .linksCard { order: 6; }
+  .dangerCard { order: 7; }
+  .tagCard { order: 8; }
   .themeOptions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (min-width: 1050px) {
   .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .themeOptions { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  .installCard,
-  .dangerCard { grid-column: auto; }
+  .themeCard { grid-column: span 2; }
+  .tagCard { grid-column: span 2; grid-row: span 2; order: 6; }
+  .linksCard { order: 7; }
+  .dangerCard { order: 8; }
 }

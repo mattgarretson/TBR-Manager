@@ -261,6 +261,7 @@ describe("Plot Pile behavior", () => {
     localStorage.setItem(LIBRARY_VIEW_PREFERENCES_KEY, JSON.stringify({
       shelf: "all",
       scope: "complete",
+      ownership: "owned",
       sort: "title",
       direction: "asc",
     }));
@@ -276,12 +277,43 @@ describe("Plot Pile behavior", () => {
     )).toHaveLength(1);
     expect((screen.getByRole("combobox", { name: "Sort books by" }) as HTMLSelectElement).value).toBe("createdAt");
     expect(screen.getByRole("button", { name: "Sort ascending" }).textContent).toContain("Desc");
+    expect(screen.getByRole("button", { name: "Owned" }).getAttribute("aria-pressed")).toBe("false");
     await waitFor(() => expect(JSON.parse(localStorage.getItem(LIBRARY_VIEW_PREFERENCES_KEY) ?? "{}")).toEqual({
       shelf: "tbr",
       scope: "all",
+      ownership: "all",
       sort: "createdAt",
       direction: "desc",
     }));
+  });
+
+  it("marks a book as bought from its card and filters by ownership", async () => {
+    const user = userEvent.setup();
+    const { repository } = renderApp();
+    await screen.findByText("Book One");
+
+    await user.click(screen.getByRole("button", { name: "Owned" }));
+    expect(await screen.findByText("No matches")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "To buy" }));
+    expect(await screen.findByText("Book One")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Book One is still to buy. Mark as owned" }));
+    await waitFor(() => expect(repository.snapshot.books[0].owned).toBe(true));
+    expect(await screen.findByText("No matches")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Owned" }));
+    expect(await screen.findByRole("button", { name: "Book One is owned. Mark as still to buy" })).toBeTruthy();
+  });
+
+  it("saves ownership from the book editor", async () => {
+    const user = userEvent.setup();
+    const { repository } = renderApp();
+    await screen.findByText("Book One");
+
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    await user.selectOptions(await screen.findByRole("combobox", { name: "My copy" }), "owned");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(repository.snapshot.books[0].owned).toBe(true));
   });
 
   it("moves a card from to read to reading to finished and stamps the date", async () => {

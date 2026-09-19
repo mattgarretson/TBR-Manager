@@ -3,6 +3,7 @@ import { currentLocalDate, effectiveBookTags } from "../../lib/library/model";
 import { selectTagCounts, selectVisibleBooks } from "../../lib/library/selectors";
 import type {
   Book,
+  BookOwnership,
   BookScope,
   BookShelf,
   BookSort,
@@ -24,6 +25,7 @@ export function LibraryView({
   onAddBook,
   onEditBook,
   onChangeBookStatus,
+  onToggleOwned,
   onRemoveBook,
   onOpenSeries,
   showBackupNudge,
@@ -37,6 +39,7 @@ export function LibraryView({
   onAddBook: () => void;
   onEditBook: (book: Book) => void;
   onChangeBookStatus: (book: Book, status: BookStatus) => void;
+  onToggleOwned: (book: Book) => void;
   onRemoveBook: (book: Book) => void;
   onOpenSeries: (name: string) => void;
   showBackupNudge: boolean;
@@ -46,7 +49,7 @@ export function LibraryView({
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState("All");
   const [preferences, setPreferences] = useState(readLibraryViewPreferences);
-  const { shelf, scope, sort, direction } = preferences;
+  const { shelf, scope, ownership, sort, direction } = preferences;
   const seriesMap = useMemo(() => new Map(series.map((item) => [item.id, item])), [series]);
   const allTags = useMemo(() => selectTagCounts(books, series), [books, series]);
   const visibleBooks = useMemo(
@@ -57,11 +60,12 @@ export function LibraryView({
       activeTag,
       shelf,
       scope,
+      ownership,
       sort,
       direction,
       today: currentLocalDate(),
     }),
-    [activeTag, books, direction, query, scope, series, shelf, sort],
+    [activeTag, books, direction, ownership, query, scope, series, shelf, sort],
   );
   const incompleteCount = series.filter((item) => item.status === "incomplete").length;
   const unfinishedCount = books.filter((item) => item.status === "tbr" || item.status === "reading").length;
@@ -144,6 +148,13 @@ export function LibraryView({
         ] as [BookScope, string][]).map(([value, label]) => (
           <button className={scope === value ? "active" : ""} type="button" onClick={() => setPreferences((current) => ({ ...current, scope: value }))} aria-pressed={scope === value} key={value}>{label}</button>
         ))}
+        <span className="filter-divider" aria-hidden="true" />
+        {([
+          ["owned", "Owned"],
+          ["unowned", "To buy"],
+        ] as [Exclude<BookOwnership, "all">, string][]).map(([value, label]) => (
+          <button className={ownership === value ? "active" : ""} type="button" onClick={() => setPreferences((current) => ({ ...current, ownership: current.ownership === value ? "all" : value }))} aria-pressed={ownership === value} key={value}>{label}</button>
+        ))}
       </div>
 
       {allTags.length > 0 && (
@@ -188,6 +199,9 @@ export function LibraryView({
                         {book.status === "reading" ? "Reading" : book.status === "finished" ? "Finished" : "Didn't finish"}
                       </span>
                     )}
+                    <button className={`ownership-toggle${book.owned ? " owned" : ""}`} type="button" disabled={saving} onClick={() => onToggleOwned(book)} aria-pressed={book.owned} aria-label={book.owned ? `${book.title} is owned. Mark as still to buy` : `${book.title} is still to buy. Mark as owned`}>
+                      {book.owned ? "✓ Owned" : "To buy"}
+                    </button>
                     {book.releaseDate && <time dateTime={book.releaseDate}>{book.releaseDate >= currentLocalDate() ? "Releases" : "Released"} {formatDate(book.releaseDate)}</time>}
                     {book.sourceUrl && <a className="source-link" href={book.sourceUrl} target="_blank" rel="noreferrer" aria-label={`Open where ${book.title} was found`}>Source ↗</a>}
                   </div>
@@ -197,18 +211,20 @@ export function LibraryView({
                     </div>
                   )}
                   {book.reason && <div className="reason-note"><small>Why it made the list</small><p>{book.reason}</p></div>}
-                  {book.status === "tbr" && (
-                    <div className="book-status-actions">
-                      <button className="book-transition-button start" type="button" disabled={saving} onClick={() => onChangeBookStatus(book, "reading")}>Start reading</button>
-                    </div>
-                  )}
-                  {book.status === "reading" && (
-                    <div className="book-status-actions">
-                      <button className="book-transition-button finish" type="button" disabled={saving} onClick={() => onChangeBookStatus(book, "finished")}>Finished</button>
-                      <button className="book-transition-button dnf" type="button" disabled={saving} onClick={() => onChangeBookStatus(book, "dnf")}>Didn&apos;t finish</button>
-                    </div>
-                  )}
-                  <button className="danger-link" type="button" onClick={() => onRemoveBook(book)}>Remove book</button>
+                  <div className="book-card-footer">
+                    {book.status === "tbr" && (
+                      <div className="book-status-actions">
+                        <button className="book-transition-button start" type="button" disabled={saving} onClick={() => onChangeBookStatus(book, "reading")}>Start reading</button>
+                      </div>
+                    )}
+                    {book.status === "reading" && (
+                      <div className="book-status-actions">
+                        <button className="book-transition-button finish" type="button" disabled={saving} onClick={() => onChangeBookStatus(book, "finished")}>Finished</button>
+                        <button className="book-transition-button dnf" type="button" disabled={saving} onClick={() => onChangeBookStatus(book, "dnf")}>Didn&apos;t finish</button>
+                      </div>
+                    )}
+                    <button className="danger-link" type="button" onClick={() => onRemoveBook(book)}>Remove book</button>
+                  </div>
                 </div>
               </article>
             );

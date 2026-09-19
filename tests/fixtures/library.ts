@@ -29,6 +29,7 @@ export const book: Book = {
   status: "tbr",
   finishedDate: "",
   sourceUrl: "",
+  owned: false,
   createdAt: timestamp,
   updatedAt: timestamp,
 };

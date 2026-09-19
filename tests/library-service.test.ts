@@ -276,6 +276,7 @@ describe("LibraryService", () => {
         status: "finished",
         finishedDate: "2027-03-04",
         sourceUrl: "https://example.com/recommendation",
+        owned: true,
       }],
       series: [series],
     });
@@ -297,6 +298,7 @@ describe("LibraryService", () => {
       status: "finished",
       finishedDate: "2027-03-04",
       sourceUrl: "https://example.com/recommendation",
+      owned: true,
     });
   });
 

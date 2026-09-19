@@ -28,6 +28,7 @@ export type Book = {
   status: BookStatus;
   finishedDate: string;
   sourceUrl: string;
+  owned: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -46,6 +47,7 @@ export type LibraryBackup = LibrarySnapshot & {
 export type ViewName = "library" | "series" | "settings";
 export type ThemeName = "bookshop" | "forest" | "ocean" | "lavender" | "graphite" | "nightshade";
 export type BookShelf = "tbr" | "reading" | "done" | "all";
+export type BookOwnership = "all" | "owned" | "unowned";
 export type BookScope = "all" | "standalone" | "incomplete" | "complete" | "upcoming";
 export type SeriesScope = "all" | "incomplete" | "complete" | "upcoming";
 export type SortDirection = "asc" | "desc";
@@ -79,6 +81,7 @@ export type SaveBookInput = {
   status?: BookStatus;
   finishedDate?: string;
   sourceUrl?: string;
+  owned?: boolean;
   newSeries?: NewSeriesInput;
 };
 
