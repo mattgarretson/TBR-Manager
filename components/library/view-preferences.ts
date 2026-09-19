@@ -10,6 +10,7 @@ import type {
 
 export const LIBRARY_VIEW_PREFERENCES_KEY = "plot-pile-library-view";
 export const SERIES_VIEW_PREFERENCES_KEY = "plot-pile-series-view";
+export const COLLAPSED_SERIES_KEY = "plot-pile-collapsed-series";
 
 export type LibraryViewPreferences = {
   shelf: BookShelf;
@@ -81,6 +82,22 @@ export function readSeriesViewPreferences(): SeriesViewPreferences {
     sort: accepted(stored.sort, SERIES_SORTS, DEFAULT_SERIES_VIEW_PREFERENCES.sort),
     direction: accepted(stored.direction, DIRECTIONS, DEFAULT_SERIES_VIEW_PREFERENCES.direction),
   };
+}
+
+export function readCollapsedSeries(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const value: unknown = JSON.parse(window.localStorage.getItem(COLLAPSED_SERIES_KEY) ?? "[]");
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeCollapsedSeries(ids: readonly string[]) {
+  try {
+    window.localStorage.setItem(COLLAPSED_SERIES_KEY, JSON.stringify(ids));
+  } catch {}
 }
 
 export function writeLibraryViewPreferences(preferences: LibraryViewPreferences) {

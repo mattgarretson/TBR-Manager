@@ -70,6 +70,16 @@ export function LibraryView({
   const incompleteCount = series.filter((item) => item.status === "incomplete").length;
   const unfinishedCount = books.filter((item) => item.status === "tbr" || item.status === "reading").length;
   const doneCount = books.filter((item) => item.status === "finished" || item.status === "dnf").length;
+  const toBuyCount = books.filter((item) => !item.owned && (item.status === "tbr" || item.status === "reading")).length;
+  // Ownership chip counts follow the selected shelf so each number matches what tapping it shows.
+  const shelfBooks = books.filter((item) =>
+    shelf === "all" ||
+    shelf === item.status ||
+    (shelf === "done" && (item.status === "finished" || item.status === "dnf")));
+  const ownershipCounts = {
+    owned: shelfBooks.filter((item) => item.owned).length,
+    unowned: shelfBooks.filter((item) => !item.owned).length,
+  };
 
   useEffect(() => {
     writeLibraryViewPreferences(preferences);
@@ -90,6 +100,7 @@ export function LibraryView({
           <span><strong>{doneCount}</strong> done</span>
           <span><strong>{series.length}</strong> series</span>
           <span><strong>{incompleteCount}</strong> waiting</span>
+          <span><strong>{toBuyCount}</strong> to buy</span>
         </div>
       </div>
 
@@ -153,7 +164,7 @@ export function LibraryView({
           ["owned", "Owned"],
           ["unowned", "To buy"],
         ] as [Exclude<BookOwnership, "all">, string][]).map(([value, label]) => (
-          <button className={ownership === value ? "active" : ""} type="button" onClick={() => setPreferences((current) => ({ ...current, ownership: current.ownership === value ? "all" : value }))} aria-pressed={ownership === value} key={value}>{label}</button>
+          <button className={ownership === value ? "active" : ""} type="button" onClick={() => setPreferences((current) => ({ ...current, ownership: current.ownership === value ? "all" : value }))} aria-pressed={ownership === value} key={value}>{label} <span>{ownershipCounts[value]}</span></button>
         ))}
       </div>
 

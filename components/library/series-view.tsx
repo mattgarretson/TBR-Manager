@@ -4,7 +4,9 @@ import { selectAllSeriesCards, selectSeriesCards } from "../../lib/library/selec
 import type { Book, Series, SeriesScope, SeriesSort } from "../../lib/library/types";
 import { formatDate } from "./view-utils";
 import {
+  readCollapsedSeries,
   readSeriesViewPreferences,
+  writeCollapsedSeries,
   writeSeriesViewPreferences,
 } from "./view-preferences";
 
@@ -28,6 +30,13 @@ export function SeriesView({
   const [preferences, setPreferences] = useState(readSeriesViewPreferences);
   const { scope, sort, direction } = preferences;
   const [query, setQuery] = useState(focusName);
+  // A series opened from a book card should show its books, so it starts expanded.
+  const [collapsed, setCollapsed] = useState(() => {
+    const ids = new Set(readCollapsedSeries());
+    const focused = series.find((item) => item.name === focusName);
+    if (focused) ids.delete(focused.id);
+    return ids;
+  });
   const allCards = useMemo(() => selectAllSeriesCards(series, books, currentLocalDate()), [books, series]);
   const cards = useMemo(
     () => selectSeriesCards({ cards: allCards, query, scope, sort, direction }),
@@ -37,15 +46,47 @@ export function SeriesView({
   const completeCount = series.length - incompleteCount;
   const upcomingCount = allCards.filter(({ next }) => Boolean(next)).length;
 
+  const allVisibleCollapsed = cards.length > 0 && cards.every(({ item }) => collapsed.has(item.id));
+
   useEffect(() => {
     writeSeriesViewPreferences(preferences);
   }, [preferences]);
+
+  useEffect(() => {
+    // Forget ids of deleted series so the stored list cannot grow without bound. Skip while
+    // nothing has loaded, or the stored list would be wiped before the library arrives.
+    if (!series.length) return;
+    const known = new Set(series.map((item) => item.id));
+    writeCollapsedSeries([...collapsed].filter((id) => known.has(id)));
+  }, [collapsed, series]);
+
+  function toggleSeries(id: string) {
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }
+
+  function setAllVisibleCollapsed(value: boolean) {
+    setCollapsed((current) => {
+      const next = new Set(current);
+      for (const { item } of cards) {
+        if (value) next.add(item.id);
+        else next.delete(item.id);
+      }
+      return next;
+    });
+  }
 
   return (
     <section className="page" aria-labelledby="series-title">
       <div className="page-heading">
         <div><p className="eyebrow">Keep the cliffhangers organized</p><h1 id="series-title">Series</h1></div>
-        <button className="secondary-button heading-action" type="button" onClick={onAddSeries} aria-label="New series">＋ New series</button>
+        <div className="heading-actions">
+          {cards.length > 0 && <button className="secondary-button heading-action" type="button" onClick={() => setAllVisibleCollapsed(!allVisibleCollapsed)}>{allVisibleCollapsed ? "Expand all" : "Collapse all"}</button>}
+          <button className="secondary-button heading-action" type="button" onClick={onAddSeries} aria-label="New series">＋ New series</button>
+        </div>
       </div>
       <label className="search-field series-search">
         <span aria-hidden="true">⌕</span>
@@ -71,12 +112,19 @@ export function SeriesView({
 
       {cards.length ? (
         <div className="series-list">
-          {cards.map(({ item, books: linkedBooks, next }) => (
-            <article className="series-card" key={item.id}>
+          {cards.map(({ item, books: linkedBooks, next }) => {
+            const isCollapsed = collapsed.has(item.id);
+            const bodyId = `series-body-${item.id}`;
+            return (
+            <article className={`series-card${isCollapsed ? " collapsed" : ""}`} key={item.id}>
               <div className="series-card-heading">
-                <div><span className={`status-badge ${item.status}`}>{item.status === "complete" ? "Finished publishing" : "Ongoing series"}</span><h2>{item.name}</h2>{item.author && <p>by {item.author}</p>}<p>{linkedBooks.length} {linkedBooks.length === 1 ? "book" : "books"} linked</p></div>
-                <button className="text-action" type="button" onClick={() => onEditSeries(item)}>Edit series</button>
+                <div><span className={`status-badge ${item.status}`}>{item.status === "complete" ? "Finished publishing" : "Ongoing series"}</span><h2>{item.name}</h2>{item.author && <p>by {item.author}</p>}<p>{linkedBooks.length} {linkedBooks.length === 1 ? "book" : "books"} linked{isCollapsed && next ? ` · Next ${formatDate(next.date)}` : ""}</p></div>
+                <div className="series-card-actions">
+                  <button className="text-action" type="button" onClick={() => onEditSeries(item)}>Edit series</button>
+                  <button className="collapse-toggle" type="button" onClick={() => toggleSeries(item.id)} aria-expanded={!isCollapsed} aria-controls={isCollapsed ? undefined : bodyId} aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${item.name}`}><svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
+                </div>
               </div>
+              {!isCollapsed && <div className="series-card-body" id={bodyId}>
               {next && <div className="release-callout"><span>Next release</span><strong>{next.title}</strong><time dateTime={next.date}>{formatDate(next.date)}</time></div>}
               {item.tags.length > 0 && <div className="series-tags" aria-label="Series tags">{item.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}
               {item.notes && <p className="series-notes">{item.notes}</p>}
@@ -99,8 +147,10 @@ export function SeriesView({
                 </ol>
               ) : <p className="empty-series">No books linked yet.</p>}
               {item.status === "incomplete" && <button className="add-to-series" type="button" onClick={() => onAddBook(item.id)} aria-label={linkedBooks.length ? "Add next book" : "Add first book"}>＋ {linkedBooks.length ? "Add next book" : "Add first book"}</button>}
+              </div>}
             </article>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="empty-state"><span className="empty-mark" aria-hidden="true">S</span><p className="eyebrow">Series shelf</p><h2>{series.length ? "No series match that filter." : "No series yet."}</h2><p>Create a series once, then link and order every book inside it.</p><button className="primary-button" type="button" onClick={onAddSeries}>＋ Create a series</button></div>

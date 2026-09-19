@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { PlotPileApp } from "../app/plot-pile-app";
 import type { CoverSearchClient } from "../components/library/cover-search";
 import {
+  COLLAPSED_SERIES_KEY,
   LIBRARY_VIEW_PREFERENCES_KEY,
   SERIES_VIEW_PREFERENCES_KEY,
 } from "../components/library/view-preferences";
@@ -277,7 +278,7 @@ describe("Plot Pile behavior", () => {
     )).toHaveLength(1);
     expect((screen.getByRole("combobox", { name: "Sort books by" }) as HTMLSelectElement).value).toBe("createdAt");
     expect(screen.getByRole("button", { name: "Sort ascending" }).textContent).toContain("Desc");
-    expect(screen.getByRole("button", { name: "Owned" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("button", { name: "Owned 0" }).getAttribute("aria-pressed")).toBe("false");
     await waitFor(() => expect(JSON.parse(localStorage.getItem(LIBRARY_VIEW_PREFERENCES_KEY) ?? "{}")).toEqual({
       shelf: "tbr",
       scope: "all",
@@ -291,17 +292,21 @@ describe("Plot Pile behavior", () => {
     const user = userEvent.setup();
     const { repository } = renderApp();
     await screen.findByText("Book One");
+    const summary = screen.getByLabelText("Library summary");
+    expect(summary.textContent).toContain("1 to buy");
 
-    await user.click(screen.getByRole("button", { name: "Owned" }));
+    await user.click(screen.getByRole("button", { name: "Owned 0" }));
     expect(await screen.findByText("No matches")).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "To buy" }));
+    await user.click(screen.getByRole("button", { name: "To buy 1" }));
     expect(await screen.findByText("Book One")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Book One is still to buy. Mark as owned" }));
     await waitFor(() => expect(repository.snapshot.books[0].owned).toBe(true));
     expect(await screen.findByText("No matches")).toBeTruthy();
+    expect(summary.textContent).toContain("0 to buy");
+    expect(screen.getByRole("button", { name: "To buy 0" })).toBeTruthy();
 
-    await user.click(screen.getByRole("button", { name: "Owned" }));
+    await user.click(screen.getByRole("button", { name: "Owned 1" }));
     expect(await screen.findByRole("button", { name: "Book One is owned. Mark as still to buy" })).toBeTruthy();
   });
 
@@ -334,6 +339,41 @@ describe("Plot Pile behavior", () => {
     await user.click(screen.getByRole("button", { name: "Done" }));
     expect(await screen.findByText("Book One")).toBeTruthy();
     expect(screen.getByText("Finished", { selector: ".book-status-badge" })).toBeTruthy();
+  });
+
+  it("collapses series cards, remembers them, and expands them all again", async () => {
+    const user = userEvent.setup();
+    const first = renderApp();
+    await screen.findByText("Book One");
+    await user.click(screen.getByRole("button", { name: "Series" }));
+    await screen.findByRole("heading", { name: "The Night Court" });
+
+    await user.click(screen.getByRole("button", { name: "Collapse The Night Court" }));
+    expect(screen.queryByText("Book One")).toBeNull();
+    expect(screen.getByText("1 book linked · Next Sep 1, 2027")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Expand The Night Court" }).getAttribute("aria-expanded")).toBe("false");
+    await waitFor(() => expect(JSON.parse(localStorage.getItem(COLLAPSED_SERIES_KEY) ?? "[]")).toEqual(["series-1"]));
+
+    first.unmount();
+    renderApp();
+    await screen.findByText("Book One");
+    await user.click(screen.getByRole("button", { name: "Series" }));
+    expect(await screen.findByRole("button", { name: "Expand The Night Court" })).toBeTruthy();
+    expect(screen.queryByText("Book One")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Expand all" }));
+    expect(screen.getByText("Book One")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Collapse all" })).toBeTruthy();
+  });
+
+  it("expands a collapsed series when it is opened from a book card", async () => {
+    localStorage.setItem(COLLAPSED_SERIES_KEY, JSON.stringify(["series-1"]));
+    const user = userEvent.setup();
+    renderApp();
+    await user.click(await screen.findByRole("button", { name: /The Night Court · Book 1/ }));
+
+    expect(await screen.findByRole("button", { name: "Collapse The Night Court" })).toBeTruthy();
+    expect(screen.getByText("Book One")).toBeTruthy();
   });
 
   it("shows inherited series tags on books and filters by them", async () => {

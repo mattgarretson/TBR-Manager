@@ -411,7 +411,7 @@ h1,
 .mini-stats {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, auto));
+  grid-template-columns: repeat(5, minmax(0, auto));
   gap: 8px;
 }
 
@@ -652,6 +652,7 @@ h1,
   font-size: 0.68rem;
 }
 
+.filter-row button span,
 .tag-filter button span { margin-left: 3px; color: var(--faint); }
 
 .filter-row button.active,
@@ -990,6 +991,26 @@ h1,
   justify-content: space-between;
   gap: 14px;
 }
+
+.heading-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.series-card-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+.collapse-toggle {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.collapse-toggle svg { transition: transform 0.18s; }
+.series-card.collapsed .collapse-toggle svg { transform: rotate(-90deg); }
+.collapse-toggle:hover { border-color: var(--berry); color: var(--berry); }
 
 .series-card h2 { margin: 8px 0 0; font-size: 1.62rem; line-height: 1.05; letter-spacing: -0.04em; }
 .series-card-heading p { margin: 5px 0 0; color: var(--muted); font-size: 0.66rem; }
