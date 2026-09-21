@@ -10,7 +10,7 @@ import {
 } from "../components/library/view-preferences";
 import { LibraryService } from "../lib/library/service";
 import { MemoryLibraryRepository } from "./helpers/memory-repository";
-import { book, snapshot, timestamp } from "./fixtures/library";
+import { book, series, snapshot, timestamp } from "./fixtures/library";
 
 function renderApp(initial = snapshot, coverClient?: CoverSearchClient, bookRemovalUndoMs?: number) {
   const repository = new MemoryLibraryRepository(initial);
@@ -200,6 +200,34 @@ describe("Plot Pile behavior", () => {
     expect(tagButtons[0].getAttribute("aria-pressed")).toBe("true");
     await user.click(tagButtons[0]);
     expect(tagButtons[0].getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("counts tags against the other active filters", async () => {
+    const user = userEvent.setup();
+    renderApp({
+      books: [
+        { ...book, id: "book-1", title: "Bought Book", owned: true },
+        { ...book, id: "book-2", title: "Wanted Book", owned: false },
+        { ...book, id: "book-3", title: "Read Book", tags: ["cozy"], status: "finished", owned: true },
+      ],
+      series: [series],
+    });
+    await screen.findByText("Bought Book");
+
+    // The "To read" shelf is the default, so the finished book and its tag are already out.
+    expect(screen.getByRole("button", { name: "All tags 2" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "slow burn 2" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^cozy/ })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "To buy 1" }));
+    expect(await screen.findByRole("button", { name: "slow burn 1" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "All tags 1" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "fantasy 1" })).toBeTruthy();
+
+    // Picking a tag must not zero out the others.
+    await user.click(screen.getByRole("button", { name: "slow burn 1" }));
+    expect(screen.getByRole("button", { name: "fantasy 1" })).toBeTruthy();
+    expect(screen.queryByText("No matches")).toBeNull();
   });
 
   it("defers decoding and loading library cover images", async () => {

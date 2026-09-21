@@ -50,8 +50,34 @@ export function LibraryView({
   const [activeTag, setActiveTag] = useState("All");
   const [preferences, setPreferences] = useState(readLibraryViewPreferences);
   const { shelf, scope, ownership, sort, direction } = preferences;
+  const today = currentLocalDate();
   const seriesMap = useMemo(() => new Map(series.map((item) => [item.id, item])), [series]);
-  const allTags = useMemo(() => selectTagCounts(books, series), [books, series]);
+  // Tag counts follow every other filter — but not the tag filter itself, or picking one tag
+  // would zero out the rest — so each number matches what tapping it shows.
+  const tagPoolBooks = useMemo(
+    () => selectVisibleBooks({
+      books,
+      series,
+      query,
+      activeTag: "All",
+      shelf,
+      scope,
+      ownership,
+      sort,
+      direction,
+      today,
+    }),
+    [books, direction, ownership, query, scope, series, shelf, sort, today],
+  );
+  const allTags = useMemo(() => {
+    const counts = selectTagCounts(tagPoolBooks, series);
+    // Keep the active tag listed even when the other filters leave it at zero, so it stays clearable.
+    if (activeTag === "All" || counts.some(([tag]) => tag === activeTag)) return counts;
+    return [...counts, [activeTag, 0] as [string, number]];
+  }, [activeTag, series, tagPoolBooks]);
+  // The row stays put whenever the library has tags at all, even if the current filters leave
+  // none of them standing — a filter combination that matches nothing shouldn't move the page.
+  const hasTags = books.some((item) => item.tags.length > 0) || series.some((item) => item.tags.length > 0);
   const visibleBooks = useMemo(
     () => selectVisibleBooks({
       books,
@@ -63,9 +89,9 @@ export function LibraryView({
       ownership,
       sort,
       direction,
-      today: currentLocalDate(),
+      today,
     }),
-    [activeTag, books, direction, ownership, query, scope, series, shelf, sort],
+    [activeTag, books, direction, ownership, query, scope, series, shelf, sort, today],
   );
   const incompleteCount = series.filter((item) => item.status === "incomplete").length;
   const unfinishedCount = books.filter((item) => item.status === "tbr" || item.status === "reading").length;
@@ -168,9 +194,9 @@ export function LibraryView({
         ))}
       </div>
 
-      {allTags.length > 0 && (
+      {hasTags && (
         <div className="tag-filter" aria-label="Filter by trope or tag">
-          <button className={activeTag === "All" ? "active" : ""} type="button" onClick={() => setActiveTag("All")} aria-pressed={activeTag === "All"}>All tags <span>{books.length}</span></button>
+          <button className={activeTag === "All" ? "active" : ""} type="button" onClick={() => setActiveTag("All")} aria-pressed={activeTag === "All"}>All tags <span>{tagPoolBooks.length}</span></button>
           {allTags.map(([tag, count]) => (
             <button className={activeTag === tag ? "active" : ""} type="button" onClick={() => setActiveTag((current) => current === tag ? "All" : tag)} aria-pressed={activeTag === tag} key={tag}>{tag} <span>{count}</span></button>
           ))}
