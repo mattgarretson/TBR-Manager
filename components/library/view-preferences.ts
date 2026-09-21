@@ -48,8 +48,18 @@ const SERIES_SCOPES: SeriesScope[] = ["all", "incomplete", "complete", "upcoming
 const SERIES_SORTS: SeriesSort[] = ["name", "books", "nextRelease", "updatedAt"];
 const DIRECTIONS: SortDirection[] = ["asc", "desc"];
 
+// Demo mode borrows a real browser, where localStorage still belongs to the visitor's own
+// library — so it must neither adopt their saved filters nor overwrite them when a demo
+// visitor taps around. Ephemeral mode reads the defaults and writes nothing, which also means
+// the demo opens the same way in every browser.
+let ephemeral = false;
+
+export function setViewPreferencesEphemeral(value: boolean) {
+  ephemeral = value;
+}
+
 function readStoredValue(key: string): Record<string, unknown> {
-  if (typeof window === "undefined") return {};
+  if (ephemeral || typeof window === "undefined") return {};
   try {
     const value = JSON.parse(window.localStorage.getItem(key) ?? "{}");
     return value && typeof value === "object" && !Array.isArray(value)
@@ -85,7 +95,7 @@ export function readSeriesViewPreferences(): SeriesViewPreferences {
 }
 
 export function readCollapsedSeries(): string[] {
-  if (typeof window === "undefined") return [];
+  if (ephemeral || typeof window === "undefined") return [];
   try {
     const value: unknown = JSON.parse(window.localStorage.getItem(COLLAPSED_SERIES_KEY) ?? "[]");
     return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
@@ -95,18 +105,21 @@ export function readCollapsedSeries(): string[] {
 }
 
 export function writeCollapsedSeries(ids: readonly string[]) {
+  if (ephemeral) return;
   try {
     window.localStorage.setItem(COLLAPSED_SERIES_KEY, JSON.stringify(ids));
   } catch {}
 }
 
 export function writeLibraryViewPreferences(preferences: LibraryViewPreferences) {
+  if (ephemeral) return;
   try {
     window.localStorage.setItem(LIBRARY_VIEW_PREFERENCES_KEY, JSON.stringify(preferences));
   } catch {}
 }
 
 export function writeSeriesViewPreferences(preferences: SeriesViewPreferences) {
+  if (ephemeral) return;
   try {
     window.localStorage.setItem(SERIES_VIEW_PREFERENCES_KEY, JSON.stringify(preferences));
   } catch {}

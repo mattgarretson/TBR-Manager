@@ -7,6 +7,16 @@ import {
   demoLibraryUrl,
   isDemoLaunch,
 } from "../app/demo-mode";
+import {
+  COLLAPSED_SERIES_KEY,
+  DEFAULT_LIBRARY_VIEW_PREFERENCES,
+  LIBRARY_VIEW_PREFERENCES_KEY,
+  readCollapsedSeries,
+  readLibraryViewPreferences,
+  setViewPreferencesEphemeral,
+  writeCollapsedSeries,
+  writeLibraryViewPreferences,
+} from "../components/library/view-preferences";
 import { parseBackup } from "../lib/library/model";
 import backupV1 from "./fixtures/backup-v1.json";
 
@@ -44,6 +54,29 @@ describe("demo mode", () => {
     expect(await dependencies.repository!.read()).toEqual(parseBackup(backupV1, now().toISOString()));
     expect(await dependencies.repository!.readMeta("last-backup-at")).toBe("2027-01-01T12:00:00.000Z");
     expect(dependencies.service!.shouldShowBackupNudge(25, "2027-01-01T12:00:00.000Z", null)).toBe(false);
+  });
+
+  it("keeps view preferences out of localStorage while ephemeral", () => {
+    const saved = { shelf: "done", scope: "standalone", ownership: "owned", sort: "title", direction: "asc" };
+    localStorage.setItem(LIBRARY_VIEW_PREFERENCES_KEY, JSON.stringify(saved));
+    localStorage.setItem(COLLAPSED_SERIES_KEY, JSON.stringify(["series-1"]));
+
+    setViewPreferencesEphemeral(true);
+    try {
+      // A demo visitor must neither inherit the filters this browser's real library saved...
+      expect(readLibraryViewPreferences()).toEqual(DEFAULT_LIBRARY_VIEW_PREFERENCES);
+      expect(readCollapsedSeries()).toEqual([]);
+      // ...nor overwrite them by tapping around in the demo.
+      writeLibraryViewPreferences({ ...DEFAULT_LIBRARY_VIEW_PREFERENCES, shelf: "all" });
+      writeCollapsedSeries(["series-9"]);
+    } finally {
+      setViewPreferencesEphemeral(false);
+    }
+
+    expect(JSON.parse(localStorage.getItem(LIBRARY_VIEW_PREFERENCES_KEY)!)).toEqual(saved);
+    expect(JSON.parse(localStorage.getItem(COLLAPSED_SERIES_KEY)!)).toEqual(["series-1"]);
+    expect(readLibraryViewPreferences().shelf).toBe("done");
+    localStorage.clear();
   });
 
   it("reports a snapshot that could not be fetched", async () => {
