@@ -241,6 +241,29 @@ describe("Plot Pile behavior", () => {
       .toBe("5 books2 to read1 reading2 done1 series");
   });
 
+  it("drops a tag the other filters have emptied instead of holding the grid shut", async () => {
+    const user = userEvent.setup();
+    renderApp({
+      // "first contact" rides only on an owned book, so choosing "To buy" empties it.
+      books: [
+        { ...book, id: "book-1", title: "Bought Book", tags: ["first contact"], owned: true },
+        { ...book, id: "book-2", title: "Wanted Book", tags: ["litrpg"], owned: false },
+      ],
+      series: [series],
+    });
+    await screen.findByText("Bought Book");
+
+    await user.click(screen.getByRole("button", { name: "first contact 1" }));
+    expect(screen.queryByText("Wanted Book")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: /^To buy/ }));
+    expect(await screen.findByText("Wanted Book")).toBeTruthy();
+    expect(screen.queryByText("No matches")).toBeNull();
+    // No zero-count chip left pressed, and nothing to un-stick by hand.
+    expect(screen.queryByRole("button", { name: /^first contact/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /^All tags/ }).getAttribute("aria-pressed")).toBe("true");
+  });
+
   it("counts tags against the other active filters", async () => {
     const user = userEvent.setup();
     renderApp({

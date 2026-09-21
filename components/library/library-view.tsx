@@ -69,12 +69,14 @@ export function LibraryView({
     }),
     [books, direction, ownership, query, scope, series, shelf, sort, today],
   );
-  const allTags = useMemo(() => {
-    const counts = selectTagCounts(tagPoolBooks, series);
-    // Keep the active tag listed even when the other filters leave it at zero, so it stays clearable.
-    if (activeTag === "All" || counts.some(([tag]) => tag === activeTag)) return counts;
-    return [...counts, [activeTag, 0] as [string, number]];
-  }, [activeTag, series, tagPoolBooks]);
+  const allTags = useMemo(() => selectTagCounts(tagPoolBooks, series), [series, tagPoolBooks]);
+  // A tag the other filters have emptied stops filtering, rather than holding the grid shut
+  // from a chip reading zero: picking "To buy" while a tag only owned books carry is a request
+  // for the to-buy books, not for nothing at all. Adjusting state here re-renders before
+  // anything paints, so the emptied tag is never shown as active.
+  if (activeTag !== "All" && !allTags.some(([tag]) => tag === activeTag)) {
+    setActiveTag("All");
+  }
   // The row stays put whenever the library has tags at all, even if the current filters leave
   // none of them standing — a filter combination that matches nothing shouldn't move the page.
   const hasTags = books.some((item) => item.tags.length > 0) || series.some((item) => item.tags.length > 0);
