@@ -222,6 +222,25 @@ describe("Plot Pile behavior", () => {
     await waitFor(() => expect(repository.snapshot.books[0].owned).toBe(true));
   });
 
+  it("summarizes the library one number per shelf", async () => {
+    renderApp({
+      books: [
+        { ...book, id: "book-1", status: "tbr" },
+        { ...book, id: "book-2", status: "tbr" },
+        { ...book, id: "book-3", status: "reading" },
+        { ...book, id: "book-4", status: "finished" },
+        { ...book, id: "book-5", status: "dnf" },
+      ],
+      series: [series],
+    });
+    await screen.findByRole("heading", { name: "My TBR" });
+
+    // Every figure has to be traceable to a shelf tap, and the shelf numbers have to sum to
+    // the total — the old summary counted tbr and reading together as "books".
+    expect(screen.getByLabelText("Library summary").textContent)
+      .toBe("5 books2 to read1 reading2 done1 series");
+  });
+
   it("counts tags against the other active filters", async () => {
     const user = userEvent.setup();
     renderApp({
@@ -340,8 +359,6 @@ describe("Plot Pile behavior", () => {
     const user = userEvent.setup();
     const { repository } = renderApp();
     await screen.findByText("Book One");
-    const summary = screen.getByLabelText("Library summary");
-    expect(summary.textContent).toContain("1 to buy");
 
     await user.click(screen.getByRole("button", { name: "Owned 0" }));
     expect(await screen.findByText("No matches")).toBeTruthy();
@@ -351,7 +368,6 @@ describe("Plot Pile behavior", () => {
     await user.click(screen.getByRole("button", { name: "Book One is still to buy. Mark as owned" }));
     await waitFor(() => expect(repository.snapshot.books[0].owned).toBe(true));
     expect(await screen.findByText("No matches")).toBeTruthy();
-    expect(summary.textContent).toContain("0 to buy");
     expect(screen.getByRole("button", { name: "To buy 0" })).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Owned 1" }));

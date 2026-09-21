@@ -93,10 +93,13 @@ export function LibraryView({
     }),
     [activeTag, books, direction, ownership, query, scope, series, shelf, sort, today],
   );
-  const incompleteCount = series.filter((item) => item.status === "incomplete").length;
-  const unfinishedCount = books.filter((item) => item.status === "tbr" || item.status === "reading").length;
+  // The summary mirrors the shelf row: a total, then one number per shelf, so every figure can
+  // be traced to something tappable. Ownership stays on its own chips, which count within the
+  // selected shelf — a summary "to buy" next to a shelf-scoped "To buy" read as the same thing
+  // and weren't.
+  const tbrCount = books.filter((item) => item.status === "tbr").length;
+  const readingCount = books.filter((item) => item.status === "reading").length;
   const doneCount = books.filter((item) => item.status === "finished" || item.status === "dnf").length;
-  const toBuyCount = books.filter((item) => !item.owned && (item.status === "tbr" || item.status === "reading")).length;
   // Ownership chip counts follow the selected shelf so each number matches what tapping it shows.
   const shelfBooks = books.filter((item) =>
     shelf === "all" ||
@@ -122,11 +125,11 @@ export function LibraryView({
       <div className="page-heading">
         <div><p className="eyebrow">On this device</p><h1 id="library-title">My TBR</h1></div>
         <div className="mini-stats" aria-label="Library summary">
-          <span><strong>{unfinishedCount}</strong> books</span>
+          <span><strong>{books.length}</strong> books</span>
+          <span><strong>{tbrCount}</strong> to read</span>
+          <span><strong>{readingCount}</strong> reading</span>
           <span><strong>{doneCount}</strong> done</span>
           <span><strong>{series.length}</strong> series</span>
-          <span><strong>{incompleteCount}</strong> waiting</span>
-          <span><strong>{toBuyCount}</strong> to buy</span>
         </div>
       </div>
 
