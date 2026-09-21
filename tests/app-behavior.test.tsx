@@ -9,7 +9,7 @@ import {
   SERIES_VIEW_PREFERENCES_KEY,
 } from "../components/library/view-preferences";
 import { LibraryService } from "../lib/library/service";
-import { MemoryLibraryRepository } from "./helpers/memory-repository";
+import { MemoryLibraryRepository } from "../lib/library/memory-repository";
 import { book, series, snapshot, timestamp } from "./fixtures/library";
 
 function renderApp(initial = snapshot, coverClient?: CoverSearchClient, bookRemovalUndoMs?: number) {
@@ -200,6 +200,26 @@ describe("Plot Pile behavior", () => {
     expect(tagButtons[0].getAttribute("aria-pressed")).toBe("true");
     await user.click(tagButtons[0]);
     expect(tagButtons[0].getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("labels demo mode and offers a link out of it without touching stored data", async () => {
+    const user = userEvent.setup();
+    window.history.pushState({}, "", "/TBR-Manager/?demo=1");
+    const repository = new MemoryLibraryRepository(snapshot);
+    const service = new LibraryService(repository, {
+      now: () => new Date(timestamp),
+      createId: () => "demo-id",
+    });
+    render(<PlotPileApp controllerDependencies={{ repository, service }} demo />);
+    await screen.findByText("Book One");
+
+    const banner = screen.getByRole("status");
+    expect(banner.textContent).toContain("Demo library");
+    expect(screen.getByRole("link", { name: "Exit demo" }).getAttribute("href")).toBe("/TBR-Manager/");
+
+    // Demo edits are allowed — they just land in the throwaway repository the demo was seeded with.
+    await user.click(screen.getByRole("button", { name: "Book One is still to buy. Mark as owned" }));
+    await waitFor(() => expect(repository.snapshot.books[0].owned).toBe(true));
   });
 
   it("counts tags against the other active filters", async () => {

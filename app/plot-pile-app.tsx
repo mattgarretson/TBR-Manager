@@ -9,6 +9,7 @@ import { SettingsView } from "../components/library/settings-view";
 import type { Book, BookStatus, Series, ViewName } from "../lib/library/types";
 import { selectStoredTagCounts } from "../lib/library/selectors";
 import { extractUrls, parseSharedBook, type SharedBookDraft } from "../lib/share/parse";
+import { demoExitHref } from "./demo-mode";
 import { useDeviceSettings } from "./use-device-settings";
 import { useLibraryController, type LibraryControllerDependencies } from "./use-library-controller";
 
@@ -37,9 +38,11 @@ function sharedLaunchFromLocation(): SharedLaunch | null {
 export function PlotPileApp({
   controllerDependencies = {},
   coverClient,
+  demo = false,
 }: {
   controllerDependencies?: LibraryControllerDependencies;
   coverClient?: CoverSearchClient;
+  demo?: boolean;
 }) {
   const library = useLibraryController(controllerDependencies);
   const device = useDeviceSettings(library.showNotice);
@@ -185,6 +188,13 @@ export function PlotPileApp({
           <button className="primary-button" type="button" onClick={() => openNewBook()}><span aria-hidden="true">＋</span> Add book</button>
         </div>
       </header>
+
+      {demo && (
+        <div className="demo-banner" role="status">
+          <span><strong>Demo library</strong> Browse and change anything — nothing is saved, and your own books are untouched.</span>
+          <a href={demoExitHref()}>Exit demo</a>
+        </div>
+      )}
 
       {library.error && !activeBookEditor && !activeLinkImport && !seriesEditor && (
         <div className="global-error" role="alert"><span>{library.error}</span><button type="button" onClick={library.dismissError}>Dismiss</button></div>

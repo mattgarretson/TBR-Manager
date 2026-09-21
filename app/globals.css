@@ -678,6 +678,36 @@ h1,
   font-size: 0.72rem;
 }
 
+/* Demo mode runs on throwaway in-memory data, so the banner has to stay legible without
+   shouting louder than the error banner below it. */
+.demo-banner {
+  width: min(1120px, calc(100% - 28px));
+  margin: 14px auto -10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border: 1px solid var(--tag-border);
+  border-radius: 12px;
+  background: var(--tag-bg);
+  color: var(--tag-text);
+  font-size: 0.72rem;
+}
+
+.demo-banner strong {
+  margin-right: 6px;
+  font-weight: 820;
+}
+
+.demo-banner a {
+  color: var(--berry);
+  font-size: 0.68rem;
+  font-weight: 820;
+  white-space: nowrap;
+}
+
 .global-error button,
 .text-action,
 .danger-link,

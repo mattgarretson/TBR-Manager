@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { LibraryService } from "../lib/library/service";
-import { MemoryLibraryRepository } from "./helpers/memory-repository";
+import { MemoryLibraryRepository } from "../lib/library/memory-repository";
 import { book, series, snapshot, timestamp } from "./fixtures/library";
 
 describe("LibraryService", () => {

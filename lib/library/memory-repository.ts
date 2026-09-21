@@ -1,6 +1,6 @@
-import type { LibraryRepository } from "../../lib/library/repository";
-import type { Book, LibrarySnapshot, Series } from "../../lib/library/types";
-import { normalizeTags } from "../../lib/library/model";
+import type { LibraryRepository } from "./repository";
+import type { Book, LibrarySnapshot, Series } from "./types";
+import { normalizeTags } from "./model";
 
 function clone<T>(value: T): T {
   return structuredClone(value);
